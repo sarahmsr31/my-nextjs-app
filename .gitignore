@@ -11,3 +11,6 @@
 
 # debug
 npm-debug.log*
+
+# Accidental nested clone at repo root — never track as submodule
+/my-nextjs-app/
