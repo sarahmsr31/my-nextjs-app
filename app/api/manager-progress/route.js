@@ -38,6 +38,7 @@ export async function GET(request) {
   const { data: leaderboard, error: lbError } = await client
     .from("admin_leaderboard")
     .select("student_name, class, access_code, total_score, days_completed, rank")
+    .order("days_completed", { ascending: true })
     .order("rank", { ascending: true });
 
   if (lbError) {

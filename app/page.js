@@ -16,9 +16,8 @@ export default function HomePage() {
         minHeight: "100vh",
         display: "flex",
         flexDirection: "column",
-        background: `linear-gradient(165deg, ${c.CHARCOAL} 0%, #0f1112 45%, #12141a 100%)`,
-        color: "#E2E8F0",
-        fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+        background: "linear-gradient(165deg, #FFFFFF 0%, #F8FAFC 55%, #EEF2FF 100%)",
+        color: "#1F2937",
       }}
     >
       <header
@@ -195,8 +194,8 @@ export default function HomePage() {
             textAlign: "center",
             padding: "28px 20px",
             borderRadius: "20px",
-            background: "rgba(200, 161, 101, 0.08)",
-            border: "1px solid rgba(200, 161, 101, 0.25)",
+            background: "rgba(255, 106, 26, 0.1)",
+            border: "1px solid rgba(255, 106, 26, 0.28)",
           }}
         >
           <p style={{ margin: "0 0 16px", color: "#E2E8F0", fontSize: "17px", fontWeight: 600 }}>

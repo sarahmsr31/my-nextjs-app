@@ -103,6 +103,21 @@ function QuizContent() {
         setStudentName("Student");
       }
 
+      // Prevent replaying a day that is already marked complete.
+      const { data: finished } = await supabase
+        .from("daily_summaries")
+        .select("id")
+        .eq("student_id", studentId)
+        .eq("day", Number(day))
+        .eq("is_completed", true)
+        .maybeSingle();
+      if (finished) {
+        router.replace(
+          `/review?day=${Number(day)}&student_id=${encodeURIComponent(studentId)}`
+        );
+        return;
+      }
+
       if (Number(day) > 1) {
         const { data: prevResponses } = await supabase
           .from('responses')
@@ -142,7 +157,7 @@ function QuizContent() {
       setLoading(false); // Only stop loading once EVERYTHING is ready
     }
     loadMissionData();
-  }, [day, studentId]);
+  }, [day, studentId, router]);
 
   // Handle Score Calculation on Finish
   useEffect(() => {
@@ -151,13 +166,27 @@ function QuizContent() {
         setSummarySaveError(null);
         const { data: userResponses } = await supabase
           .from('responses')
-          .select('correct, topic, answer')
+          .select('question_number, attempt, correct, topic, answer, created_at')
           .eq('student_id', studentId)
-          .eq('day_number', Number(day));
+          .eq('day_number', Number(day))
+          .order('question_number', { ascending: true })
+          .order('created_at', { ascending: true });
         
         if (userResponses?.length > 0) {
-          const correctCount = userResponses.filter(r => r.correct).length;
-          setUserScore(Math.round((correctCount / userResponses.length) * 100));
+          // Score by the final attempt per question (not total raw attempts).
+          const lastAttemptByQuestion = new Map();
+          for (const r of userResponses) {
+            const qn = Number(r.question_number);
+            if (!Number.isFinite(qn)) continue;
+            lastAttemptByQuestion.set(qn, r);
+          }
+          const finalResponses = [...lastAttemptByQuestion.values()];
+          const correctCount = finalResponses.filter((r) => r.correct).length;
+          setUserScore(
+            finalResponses.length > 0
+              ? Math.round((correctCount / finalResponses.length) * 100)
+              : 0
+          );
 
           try {
             const res = await fetch("/api/debrief", {
@@ -166,7 +195,7 @@ function QuizContent() {
               body: JSON.stringify({
                 studentName: studentName,
                 day: day,
-                responses: userResponses,
+                responses: finalResponses,
               }),
             });
             const data = await res.json().catch(() => ({}));
@@ -185,7 +214,7 @@ function QuizContent() {
             const aiStrengthsArray = aiData.strengths.length ? aiData.strengths : [];
             const aiFocusArray = aiData.focus_areas.length ? aiData.focus_areas : [];
             const currentDay = Number(day);
-            const totalQuestions = userResponses.length;
+            const totalQuestions = finalResponses.length;
             const correctAnswers = correctCount;
             const aiFeedbackText = text;
 
@@ -305,7 +334,7 @@ function QuizContent() {
         setChances(prev => prev - 1);
         setFeedback({ 
           text: "Not quite!", 
-          color: "#C8A165", 
+          color: "#FF6A1A", 
           type: "retry" 
         });
         setAiHint(personalize(currentQ.retry_hint) || "Take another look and try again.");
@@ -347,16 +376,15 @@ function QuizContent() {
       <div
         style={{
           minHeight: "100vh",
-          backgroundColor: "#1A1B1C",
-          color: "#fff",
+          backgroundColor: "#FFFFFF",
+          color: "#1F2937",
           padding: "20px",
-          fontFamily: "system-ui, sans-serif",
           display: "flex",
           flexDirection: "column",
         }}
       >
         <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <p style={{ color: "#C8A165", fontWeight: "bold", letterSpacing: "2px" }}>SYNCHRONIZING NAVIGATOR DATA...</p>
+          <p style={{ color: "#FF6A1A", fontWeight: "bold", letterSpacing: "2px" }}>SYNCHRONIZING NAVIGATOR DATA...</p>
         </div>
         <footer style={BRANDING.FOOTER_STYLE}>{BRANDING.FOOTER_LINE}</footer>
       </div>
@@ -404,14 +432,14 @@ function QuizContent() {
                 </div>
               )}
 
-              <h1 style={{ color: "#C8A165", fontSize: "24px", marginBottom: "15px" }}>
+              <h1 style={{ color: "#FF6A1A", fontSize: "24px", marginBottom: "15px" }}>
                 Day {day}: Mission Briefing
               </h1>
 
               <div style={briefingTextStyle}>
                 {Number(day) === 1 ? (
                   <>
-                    <p style={{ fontWeight: "bold", color: "#C8A165", marginBottom: "10px" }}>Hi {studentName}!</p>
+                    <p style={{ fontWeight: "bold", color: "#FF6A1A", marginBottom: "10px" }}>Hi {studentName}!</p>
                     <p>
                       Welcome to Day 1 of Ad Astra. I am so excited to start this 40-day mission with you.
                       Today is our <strong>Pre-Flight Check</strong>. Think of this like a map; before we soar to the stars,
@@ -421,7 +449,7 @@ function QuizContent() {
                       This isn&apos;t a school exam, so don&apos;t be nervous! It&apos;s just a way for us to see your starting point.
                       Be honest, do your best, and remember: by Day 40, you&apos;re going to look back at today and see how much you&apos;ve grown.
                     </p>
-                    <p style={{ marginTop: "15px", fontWeight: "bold", color: "#C8A165" }}>
+                    <p style={{ marginTop: "15px", fontWeight: "bold", color: "#FF6A1A" }}>
                       {studentName}, are you ready? Let&apos;s see what you&apos;ve got!
                     </p>
                   </>
@@ -436,9 +464,9 @@ function QuizContent() {
             </motion.div>
           ) : quizFinished ? (
             <motion.div key="finished" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} style={cardStyle}>
-              <h2 style={{ fontSize: "28px", color: "#C8A165", textAlign: "center" }}>Mission Complete</h2>
+              <h2 style={{ fontSize: "28px", color: "#FF6A1A", textAlign: "center" }}>Mission Complete</h2>
               <div style={scoreBoxStyle}>
-                <div style={{ fontSize: "48px", fontWeight: "800", color: "#C8A165" }}>{userScore}%</div>
+                <div style={{ fontSize: "48px", fontWeight: "800", color: "#FF6A1A" }}>{userScore}%</div>
                 <p style={{ fontSize: "12px", color: "#94A3B8", letterSpacing: "1px", marginBottom: "20px" }}>
                   SESSION ACCURACY
                 </p>
@@ -464,7 +492,7 @@ function QuizContent() {
 
                 {/* NEW AI FEEDBACK BOX */}
                 <div style={{ borderTop: "1px solid #333", paddingTop: "20px", textAlign: "left" }}>
-                  <p style={{ fontSize: "14px", color: "#C8A165", fontWeight: "bold", marginBottom: "5px" }}>
+                  <p style={{ fontSize: "14px", color: "#FF6A1A", fontWeight: "bold", marginBottom: "5px" }}>
                     🚀 INSTRUCTOR DEBRIEF:
                   </p>
                   <p style={{ fontSize: "15px", lineHeight: "1.6", color: "#E2E8F0", fontStyle: "italic" }}>
@@ -532,7 +560,7 @@ function QuizContent() {
           ) : (
             <motion.div key={currentIndex} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} style={cardStyle}>
               <div style={{ marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ color: "#C8A165", fontSize: "12px", fontWeight: "bold" }}>NAV DATA {currentIndex + 1}/{questions.length}</span>
+                <span style={{ color: "#FF6A1A", fontSize: "12px", fontWeight: "bold" }}>NAV DATA {currentIndex + 1}/{questions.length}</span>
                 <span style={{ color: "#4B5563", fontSize: "10px" }}>TOPIC: {questions[currentIndex]?.topic}</span>
               </div>
               
@@ -571,20 +599,20 @@ function QuizContent() {
 }
 
 // --- STYLES ---
-const containerStyle = { minHeight: "100vh", backgroundColor: "#141516", color: "#fff", padding: "20px", fontFamily: "system-ui, sans-serif", display: "flex", flexDirection: "column" };
+const containerStyle = { minHeight: "100vh", backgroundColor: "#FFFFFF", color: "#1F2937", padding: "20px", display: "flex", flexDirection: "column" };
 const quizMainColumnStyle = { flex: 1, display: "flex", flexDirection: "column", width: "100%", maxWidth: "600px", margin: "0 auto" };
 const headerStyle = { width: "100%", marginBottom: "40px", display: "flex", justifyContent: "space-between", alignItems: "center" };
-const miniLogoStyle = { width: "44px", height: "44px", borderRadius: "50%", objectFit: "cover", border: "1px solid #C8A165" };
+const miniLogoStyle = { width: "44px", height: "44px", borderRadius: "50%", objectFit: "cover", border: "1px solid #FF6A1A" };
 const exitBtnStyle = { color: "#94A3B8", background: "none", border: "none", cursor: "pointer", fontSize: "13px", fontWeight: 600 };
 const logoutBtnStyle = { color: "#6B7280", background: "none", border: "none", cursor: "pointer", fontSize: "12px", textDecoration: "underline" };
-const cardStyle = { background: "#1F2021", padding: "40px", borderRadius: "30px", border: "1px solid #333", boxShadow: "0 20px 40px rgba(0,0,0,0.3)" };
-const briefingTextStyle = { lineHeight: "1.8", color: "#D1D5DB", marginBottom: "30px", fontSize: "16px" };
+const cardStyle = { background: "#F8FAFC", padding: "40px", borderRadius: "30px", border: "1px solid #E2E8F0", boxShadow: "0 12px 26px rgba(15,23,42,0.08)" };
+const briefingTextStyle = { lineHeight: "1.8", color: "#334155", marginBottom: "30px", fontSize: "16px" };
 const questionTextStyle = { fontSize: "22px", marginBottom: "30px", lineHeight: "1.4", fontWeight: "600" };
-const optStyle = { textAlign: "left", padding: "18px", background: "#141516", color: "#fff", border: "1px solid #333", borderRadius: "16px", cursor: "pointer", fontSize: "15px", transition: "all 0.2s" };
-const primaryBtnStyle = { width: "100%", padding: "16px", background: "#C8A165", color: "#1A1B1C", border: "none", borderRadius: "14px", fontWeight: "800", cursor: "pointer", textTransform: "uppercase", letterSpacing: "1px" };
-const scoreBoxStyle = { background: "#141516", padding: "30px", borderRadius: "24px", textAlign: "center", margin: "25px 0", border: "1px solid #333" };
-const feedbackBoxStyle = (color) => ({ marginTop: "25px", padding: "20px", background: "#141516", borderRadius: "20px", borderLeft: `4px solid ${color}` });
-const recapBoxStyle = { background: "rgba(200, 161, 101, 0.1)", border: "1px dashed #C8A165", padding: "15px", borderRadius: "15px", marginBottom: "20px", color: "#C8A165", fontStyle: "italic" };
+const optStyle = { textAlign: "left", padding: "18px", background: "#FFFFFF", color: "#1F2937", border: "1px solid #CBD5E1", borderRadius: "16px", cursor: "pointer", fontSize: "15px", transition: "all 0.2s" };
+const primaryBtnStyle = { width: "100%", padding: "16px", background: "#FF6A1A", color: "#1A1B1C", border: "none", borderRadius: "14px", fontWeight: "800", cursor: "pointer", textTransform: "uppercase", letterSpacing: "1px" };
+const scoreBoxStyle = { background: "#FFFFFF", padding: "30px", borderRadius: "24px", textAlign: "center", margin: "25px 0", border: "1px solid #CBD5E1" };
+const feedbackBoxStyle = (color) => ({ marginTop: "25px", padding: "20px", background: "#FFFFFF", borderRadius: "20px", borderLeft: `4px solid ${color}` });
+const recapBoxStyle = { background: "rgba(255, 106, 26, 0.12)", border: "1px dashed #FF6A1A", padding: "15px", borderRadius: "15px", marginBottom: "20px", color: "#FF6A1A", fontStyle: "italic" };
 const reactionSectionStyle = {
   marginTop: "22px",
   paddingTop: "18px",
@@ -598,23 +626,23 @@ const reactionBtnStyle = {
   minWidth: "96px",
   padding: "14px 18px",
   borderRadius: "16px",
-  border: "1px solid #3F4143",
-  background: "#141516",
-  color: "#E2E8F0",
+  border: "1px solid #CBD5E1",
+  background: "#FFFFFF",
+  color: "#334155",
   cursor: "pointer",
   transition: "border-color 0.2s, background 0.2s, transform 0.15s",
 };
 const reactionBtnActiveStyle = {
-  border: "1px solid #C8A165",
-  background: "rgba(200, 161, 101, 0.12)",
-  boxShadow: "0 0 0 1px rgba(200, 161, 101, 0.25)",
+  border: "1px solid #FF6A1A",
+  background: "rgba(255, 106, 26, 0.14)",
+  boxShadow: "0 0 0 1px rgba(255, 106, 26, 0.3)",
 };
 const reactionLabelStyle = { fontSize: "11px", fontWeight: 700, letterSpacing: "0.04em", color: "#94A3B8" };
 
 // --- DEFAULT EXPORT ---
 export default function QuizPage() {
   return (
-    <Suspense fallback={<div style={{color: '#C8A165', textAlign: 'center', marginTop: '100px', fontWeight: 'bold'}}>INITIALIZING MISSION DATA...</div>}>
+    <Suspense fallback={<div style={{color: '#FF6A1A', textAlign: 'center', marginTop: '100px', fontWeight: 'bold'}}>INITIALIZING MISSION DATA...</div>}>
       <QuizContent />
     </Suspense>
   );

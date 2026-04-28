@@ -55,7 +55,7 @@ function DashboardLaunch({ studentName = "Navigator", onStartMission, onLogoClic
             style={{ width: "120px", height: "auto", marginBottom: "20px", objectFit: "contain" }}
           />
         )}
-        <h1 style={{ fontSize: "32px", fontWeight: "800", color: "#C8A165", marginBottom: "10px" }}>
+        <h1 style={{ fontSize: "32px", fontWeight: "800", color: "#FF6A1A", marginBottom: "10px" }}>
           Welcome to Your Mission Dashboard
         </h1>
         <p style={{ fontSize: "18px", color: "#94A3B8" }}>
@@ -69,7 +69,7 @@ function DashboardLaunch({ studentName = "Navigator", onStartMission, onLogoClic
         animate={{ opacity: 1 }}
         transition={{ delay: 0.3 }}
       >
-        <h2 style={{ color: "#C8A165", fontSize: "20px", marginBottom: "15px" }}>🚀 The Flight Rule</h2>
+        <h2 style={{ color: "#FF6A1A", fontSize: "20px", marginBottom: "15px" }}>🚀 The Flight Rule</h2>
         <p style={{ fontSize: "16px", lineHeight: "1.6", marginBottom: "15px" }}>
           <strong>This is not a test.</strong> This is not a school exam. This is a special chance to{" "}
           <strong>learn about yourself</strong> and practice your English.
@@ -123,19 +123,19 @@ function DashboardLaunch({ studentName = "Navigator", onStartMission, onLogoClic
 }
 
 const featureBox = {
-  background: "rgba(200, 161, 101, 0.05)",
-  border: "1px solid rgba(200, 161, 101, 0.2)",
+  background: "rgba(255, 106, 26, 0.08)",
+  border: "1px solid rgba(255, 106, 26, 0.28)",
   borderRadius: "15px",
   padding: "20px",
   textAlign: "center",
 };
 
-const featureTitle = { color: "#C8A165", fontSize: "16px", margin: "10px 0" };
+const featureTitle = { color: "#FF6A1A", fontSize: "16px", margin: "10px 0" };
 const featureText = { fontSize: "13px", color: "#94A3B8", lineHeight: "1.4" };
 
 const launchButtonStyle = {
   marginTop: "50px",
-  backgroundColor: "#C8A165",
+  backgroundColor: "#FF6A1A",
   color: "#1A1B1C",
   padding: "18px 40px",
   borderRadius: "50px",
@@ -253,17 +253,17 @@ function DashboardContent() {
   if (loading) return <div style={loadingStyle}>Syncing with Mission Control...</div>;
 
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: "#1A1B1C", color: "#fff", padding: "30px", fontFamily: "sans-serif", display: "flex", flexDirection: "column" }}>
+    <div style={{ minHeight: "100vh", backgroundColor: "#FFFFFF", color: "#1F2937", padding: "30px", display: "flex", flexDirection: "column" }}>
       {/* Header Section */}
       <header style={{ maxWidth: "900px", margin: "0 auto 40px", display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
         <div>
-          <h1 style={{ fontSize: "28px", color: "#C8A165", fontWeight: "800", marginBottom: "5px" }}>AD ASTRA ACADEMY</h1>
+          <h1 style={{ fontSize: "28px", color: "#FF6A1A", fontWeight: "800", marginBottom: "5px" }}>AD ASTRA ACADEMY</h1>
           <p style={{ color: "#94A3B8", fontSize: "14px", textTransform: "uppercase", letterSpacing: "1px" }}>
             Navigator: {displayName}
           </p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
-          <div style={{ display: "flex", gap: "10px", background: "#242526", padding: "6px", borderRadius: "14px", border: "1px solid #333" }}>
+          <div style={{ display: "flex", gap: "10px", background: "#F1F5F9", padding: "6px", borderRadius: "14px", border: "1px solid #CBD5E1" }}>
             <button 
               type="button"
               onClick={() => {
@@ -308,7 +308,7 @@ function DashboardContent() {
             </motion.div>
           ) : (
             <motion.div key="log" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-              <h2 style={{ marginBottom: "25px", fontSize: "20px", color: "#C8A165" }}>Flight Archive</h2>
+              <h2 style={{ marginBottom: "25px", fontSize: "20px", color: "#FF6A1A" }}>Flight Archive</h2>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "15px" }}>
                 {Array.from({ length: 40 }, (_, i) => {
                   const dayNum = i + 1;
@@ -317,19 +317,34 @@ function DashboardContent() {
                   const isActive = dayNum === nextDay;
                   const isLocked = dayNum > nextDay;
                   const isSkipped = !isCompleted && dayNum < nextDay;
+                  const canOpenMissionLog = dayNum < nextDay && !!studentId;
 
                   return (
                     <div 
                       key={dayNum} 
+                      onClick={() => {
+                        if (canOpenMissionLog) {
+                          router.push(`/review?day=${dayNum}&student_id=${encodeURIComponent(studentId)}`);
+                        }
+                      }}
+                      role={canOpenMissionLog ? "button" : undefined}
+                      tabIndex={canOpenMissionLog ? 0 : -1}
+                      onKeyDown={(e) => {
+                        if (!canOpenMissionLog) return;
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          router.push(`/review?day=${dayNum}&student_id=${encodeURIComponent(studentId)}`);
+                        }
+                      }}
                       style={{
                         ...logCardStyle,
                         opacity: isLocked || isSkipped ? 0.45 : 1,
                         filter: isLocked ? "grayscale(100%)" : isSkipped ? "grayscale(55%)" : "none",
-                        border: isCompleted ? "1px solid #10b981" : isActive ? "1px solid #C8A165" : isSkipped ? "1px solid #4B5563" : "1px solid #333",
-                        cursor: isLocked || isSkipped ? "default" : "pointer"
+                        border: isCompleted ? "1px solid #10b981" : isActive ? "1px solid #FF6A1A" : isSkipped ? "1px solid #4B5563" : "1px solid #333",
+                        cursor: canOpenMissionLog ? "pointer" : "default"
                       }}
                     >
-                      <span style={{ color: isLocked || isSkipped ? "#6B7280" : "#C8A165", fontWeight: "bold", fontSize: "11px" }}>DAY {dayNum}</span>
+                      <span style={{ color: isLocked || isSkipped ? "#6B7280" : "#FF6A1A", fontWeight: "bold", fontSize: "11px" }}>DAY {dayNum}</span>
                       <div style={{ margin: "12px 0", fontSize: "20px" }}>
                         {isCompleted ? "✅" : isLocked ? "🔒" : isSkipped ? "—" : "🚀"}
                       </div>
@@ -340,7 +355,10 @@ function DashboardContent() {
                             {Math.round((missionData.correct / missionData.total) * 100)}% ACC
                           </div>
                           <button 
-                            onClick={() => router.push(`/review?day=${dayNum}&student_id=${studentId}`)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(`/review?day=${dayNum}&student_id=${encodeURIComponent(studentId)}`);
+                            }}
                             style={{...secondaryBtnStyle, padding: "5px", fontSize: "10px"}}
                           >
                             Review
@@ -348,7 +366,7 @@ function DashboardContent() {
                         </div>
                       ) : (
                         <div style={{ fontSize: "10px", color: isLocked ? "#4B5563" : isSkipped ? "#6B7280" : "#94A3B8", fontWeight: isSkipped ? 600 : undefined }}>
-                          {isLocked ? "LOCKED" : isSkipped ? "SKIPPED" : "READY"}
+                          {isLocked ? "LOCKED" : isSkipped ? "VIEW LOG" : "READY"}
                         </div>
                       )}
                     </div>
@@ -366,13 +384,13 @@ function DashboardContent() {
 }
 
 // Styles
-const heroCardStyle = { background: "#242526", padding: "24px", borderRadius: "32px", border: "1px solid #333", textAlign: "center", boxShadow: "0 20px 40px rgba(0,0,0,0.3)" };
-const logCardStyle = { background: "#242526", padding: "15px", borderRadius: "20px", border: "1px solid #333", transition: "0.2s", display: "flex", flexDirection: "column", alignItems: "center" };
-const secondaryBtnStyle = { width: "100%", padding: "12px", background: "none", border: "1px solid #4B5563", borderRadius: "12px", color: "#E2E8F0", cursor: "pointer", fontSize: "13px", fontWeight: "600" };
+const heroCardStyle = { background: "#F8FAFC", padding: "24px", borderRadius: "32px", border: "1px solid #E2E8F0", textAlign: "center", boxShadow: "0 12px 26px rgba(15,23,42,0.08)" };
+const logCardStyle = { background: "#F8FAFC", padding: "15px", borderRadius: "20px", border: "1px solid #E2E8F0", transition: "0.2s", display: "flex", flexDirection: "column", alignItems: "center" };
+const secondaryBtnStyle = { width: "100%", padding: "12px", background: "none", border: "1px solid #94A3B8", borderRadius: "12px", color: "#334155", cursor: "pointer", fontSize: "13px", fontWeight: "600" };
 const logOffBtnStyle = { background: "none", border: "1px solid #4B5563", color: "#94A3B8", padding: "8px 16px", borderRadius: "12px", cursor: "pointer", fontSize: "12px", fontWeight: "600", transition: "0.2s" };
-const activeTabBtn = { padding: "10px 20px", background: "#C8A165", color: "#1A1B1C", border: "none", borderRadius: "10px", cursor: "pointer", fontWeight: "bold", fontSize: "14px" };
+const activeTabBtn = { padding: "10px 20px", background: "#FF6A1A", color: "#1A1B1C", border: "none", borderRadius: "10px", cursor: "pointer", fontWeight: "bold", fontSize: "14px" };
 const inactiveTabBtn = { padding: "10px 20px", background: "none", color: "#94A3B8", border: "none", cursor: "pointer", fontSize: "14px" };
-const loadingStyle = { display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", backgroundColor: "#1A1B1C", color: "#C8A165", fontWeight: "bold" };
+const loadingStyle = { display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", backgroundColor: "#FFFFFF", color: "#FF6A1A", fontWeight: "bold" };
 
 export default function Dashboard() {
   return <Suspense fallback={null}><DashboardContent /></Suspense>;

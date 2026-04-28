@@ -134,11 +134,11 @@ export async function POST(req) {
           : `OFSS — Your 8-digit login code`,
       html: `
         <div style="font-family: system-ui, sans-serif; padding: 24px; background: #141516; color: #e8eaed;">
-          <p style="color: #C8A165; font-weight: 700; margin: 0 0 12px;">Ad Astra / OFSS</p>
+          <p style="color: #FF6A1A; font-weight: 700; margin: 0 0 12px;">Ad Astra / OFSS</p>
           <p style="margin: 0 0 16px;">Hello${mode === "new" ? ` — registration for <strong>${escapeHtml(displayName)}</strong>` : ""},</p>
           <p style="margin: 0 0 12px;">Your verification code is:</p>
           <div style="background: #1F2021; border: 1px solid #333; border-radius: 12px; padding: 20px; text-align: center; margin: 16px 0;">
-            <span style="font-size: 32px; letter-spacing: 8px; font-weight: 800; color: #C8A165;">${code}</span>
+            <span style="font-size: 32px; letter-spacing: 8px; font-weight: 800; color: #FF6A1A;">${code}</span>
           </div>
           <p style="color: #94a3b8; font-size: 14px; margin: 0;">This code expires in ${Math.floor(COOKIE_MAX_AGE / 60)} minutes. If you did not request it, you can ignore this email.</p>
         </div>

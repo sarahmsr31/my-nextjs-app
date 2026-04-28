@@ -7,13 +7,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../../utils/supabase/client";
 import { BRANDING } from "../../utils/branding";
 
-const bg = "#141516";
-const card = "#1F2021";
-const gold = "#C8A165";
-const labelColor = "#F3F4F6";
-const muted = "#D1D5DB";
-const inputBg = "#141516";
-const border = "#3F4143";
+const bg = "#FFFFFF";
+const card = "#F8FAFC";
+const gold = "#FF6A1A";
+const labelColor = "#334155";
+const muted = "#64748B";
+const inputBg = "#FFFFFF";
+const border = "#CBD5E1";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -75,15 +75,16 @@ export default function LoginPage() {
 
       if (updateError) throw updateError;
 
-      launchMission(studentData.id, studentData.current_day);
+      launchMission(studentData.id);
     } catch (err) {
       setError("Failed to save nickname.");
       setLoading(false);
     }
   }
 
-  const launchMission = (id, day) => {
-    router.push(`/quiz?student_id=${id}&day=${day || 1}`);
+  const launchMission = (id) => {
+    // Route through dashboard so saved progress decides the next mission day.
+    router.push(`/dashboard?student_id=${encodeURIComponent(id)}`);
   };
 
   const goToDashboardFromLogo = () => {
@@ -170,7 +171,7 @@ export default function LoginPage() {
                 <span style={{ fontSize: "22px", color: gold, fontWeight: "bold" }}>{studentData.preferred_name}</span>
                 <p style={{ color: muted, fontSize: "12px", marginTop: "4px" }}>Day {studentData.current_day} Ready for Launch</p>
               </div>
-              <button onClick={() => launchMission(studentData.id, studentData.current_day)} style={primaryButtonStyle(false)}>
+              <button onClick={() => launchMission(studentData.id)} style={primaryButtonStyle(false)}>
                 Confirm & Launch
               </button>
               <button onClick={() => setStep("login")} style={{ background: "none", border: "none", color: "#4B5563", marginTop: "15px", cursor: "pointer", fontSize: "13px" }}>
@@ -187,7 +188,7 @@ export default function LoginPage() {
 }
 
 // --- Styles ---
-const containerStyle = { minHeight: "100vh", backgroundColor: bg, display: "flex", flexDirection: "column", padding: "24px", fontFamily: "system-ui, sans-serif" };
+const containerStyle = { minHeight: "100vh", backgroundColor: bg, display: "flex", flexDirection: "column", padding: "24px" };
 const homeLinkBarStyle = { width: "100%", maxWidth: "440px", margin: "0 auto 8px", padding: "0 4px" };
 const homeLinkStyle = { color: "#94A3B8", fontSize: "13px", fontWeight: 600, textDecoration: "none" };
 const loginMainStyle = { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", width: "100%" };
@@ -199,4 +200,4 @@ const labelStyle = { color: labelColor, fontSize: "14px", fontWeight: 600 };
 const errorStyle = { color: "#FCA5A5", fontSize: "14px", textAlign: "center" };
 const inputStyle = { width: "100%", padding: "14px", borderRadius: "12px", border: `1px solid ${border}`, background: inputBg, color: "#FFFFFF", fontSize: "16px", outline: "none" };
 const primaryButtonStyle = (disabled) => ({ width: "100%", padding: "16px", borderRadius: "14px", border: "none", background: disabled ? "#5c4d36" : gold, color: "#1A1B1C", fontWeight: 800, cursor: disabled ? "not-allowed" : "pointer", textTransform: "uppercase" });
-const identityBox = { background: "#141516", padding: "20px", borderRadius: "16px", border: `1px solid ${border}`, marginBottom: "20px" };
+const identityBox = { background: "#2B4166", padding: "20px", borderRadius: "16px", border: `1px solid ${border}`, marginBottom: "20px" };

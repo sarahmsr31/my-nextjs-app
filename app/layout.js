@@ -1,4 +1,11 @@
 import "./globals.css";
+import { Nunito } from "next/font/google";
+
+const nunito = Nunito({
+  subsets: ["latin"],
+  weight: ["400", "600", "700", "800"],
+  display: "swap",
+});
 
 export const metadata = {
   title: "Ad Astra",
@@ -8,7 +15,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className={nunito.className}>{children}</body>
     </html>
   );
 }
