@@ -10,6 +10,11 @@ const nunito = Nunito({
 export const metadata = {
   title: "Ad Astra",
   description: "Ad Astra learning platform",
+  icons: {
+    icon: "/images/ad-astra-logo.png",
+    shortcut: "/images/ad-astra-logo.png",
+    apple: "/images/ad-astra-logo.png",
+  },
 };
 
 export default function RootLayout({ children }) {
