@@ -8,8 +8,14 @@
     "start": "next start"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@react-email/components": "^1.0.11",
+    "@react-email/render": "^2.0.5",
+    "@supabase/supabase-js": "^2.101.1",
+    "framer-motion": "^12.38.0",
     "next": "^13.0.0",
     "react": "^18.0.0",
-    "react-dom": "^18.0.0"
+    "react-dom": "^18.0.0",
+    "resend": "^6.10.0"
   }
 }

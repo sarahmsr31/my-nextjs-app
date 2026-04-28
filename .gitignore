@@ -1,0 +1,13 @@
+# dependencies
+/node_modules
+
+# env
+.env*.local
+.env
+
+# Next.js
+/.next/
+/out/
+
+# debug
+npm-debug.log*
