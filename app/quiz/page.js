@@ -5,6 +5,10 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { supabase } from "../../utils/supabase/client";
 import { syncAdminLeaderboard } from "../../utils/syncAdminLeaderboard";
 import { BRANDING } from "../../utils/branding";
+import {
+  getProgramMissionContext,
+  getProgressCutoverIso,
+} from "../../utils/programCalendar";
 import { motion, AnimatePresence } from "framer-motion";
 
 function QuizContent() {
@@ -103,6 +107,19 @@ function QuizContent() {
         setStudentName("Student");
       }
 
+      const programCtx = getProgramMissionContext(new Date());
+      if (
+        !programCtx.useLegacyProgression &&
+        programCtx.phase === "live" &&
+        programCtx.officialDay != null &&
+        Number(day) !== programCtx.officialDay
+      ) {
+        router.replace(
+          `/quiz?day=${programCtx.officialDay}&student_id=${encodeURIComponent(studentId)}`
+        );
+        return;
+      }
+
       // Prevent replaying a day that is already marked complete.
       const { data: finished } = await supabase
         .from("daily_summaries")
@@ -112,6 +129,28 @@ function QuizContent() {
         .eq("is_completed", true)
         .maybeSingle();
       if (finished) {
+        router.replace(
+          `/review?day=${Number(day)}&student_id=${encodeURIComponent(studentId)}`
+        );
+        return;
+      }
+
+      // Fallback guard: if summary row is missing but all questions for this day were
+      // already answered in responses, route to review instead of allowing a reattempt.
+      const cutIso = getProgressCutoverIso();
+      let answeredQ = supabase
+        .from("responses")
+        .select("question_number")
+        .eq("student_id", studentId)
+        .eq("day_number", Number(day));
+      if (cutIso) answeredQ = answeredQ.gte("created_at", cutIso);
+      const { data: answeredRows } = await answeredQ;
+      const uniqueAnswered = new Set(
+        (answeredRows || [])
+          .map((r) => Number(r.question_number))
+          .filter((n) => Number.isFinite(n))
+      ).size;
+      if (uniqueAnswered >= 10) {
         router.replace(
           `/review?day=${Number(day)}&student_id=${encodeURIComponent(studentId)}`
         );
@@ -274,17 +313,21 @@ function QuizContent() {
           setPeerAverage(Math.round((totalCorrect / allPeerData.length) * 100));
         }
 
-        // Keep students.current_day aligned with class calendar: after finishing day N, next
-        // mission is at least N+1, but never below an admin-set current_day (e.g. cohort on day 3).
+        const ctxSnap = getProgramMissionContext(new Date());
         if (studentId && userResponses?.length > 0) {
-          const { data: sRow } = await supabase
-            .from("students")
-            .select("current_day")
-            .eq("id", studentId)
-            .single();
-          const cur = Number(sRow?.current_day) || 1;
-          const afterMission = Number(day) + 1;
-          const nextCal = Math.min(40, Math.max(afterMission, cur));
+          let nextCal;
+          if (ctxSnap.useLegacyProgression) {
+            const { data: sRow } = await supabase
+              .from("students")
+              .select("current_day")
+              .eq("id", studentId)
+              .single();
+            const cur = Number(sRow?.current_day) || 1;
+            const afterMission = Number(day) + 1;
+            nextCal = Math.min(40, Math.max(afterMission, cur));
+          } else {
+            nextCal = Math.min(40, Number(day) + 1);
+          }
           const { error: dayErr } = await supabase
             .from("students")
             .update({ current_day: nextCal })

@@ -5,6 +5,10 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { supabase } from "../../utils/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { BRANDING } from "../../utils/branding";
+import {
+  getProgramMissionContext,
+  getProgressCutoverIso,
+} from "../../utils/programCalendar";
 
 function DashboardLaunch({ studentName = "Navigator", onStartMission, onLogoClick }) {
   const dashboardContainer = {
@@ -176,48 +180,102 @@ function DashboardContent() {
         .limit(1);
       setStudent(Array.isArray(sRows) && sRows.length > 0 ? sRows[0] : null);
 
-      // 2. Fetch Mission History & Calculate Accuracy
-      const { data: rData } = await supabase
+      // 2. Fetch Mission History (optional created_at cutover for May 1 cohort reset).
+      const cut = getProgressCutoverIso();
+      let dsQuery = supabase
+        .from("daily_summaries")
+        .select("day, score, correct_count, total_questions")
+        .eq("student_id", studentId)
+        .eq("is_completed", true);
+      if (cut) dsQuery = dsQuery.gte("created_at", cut);
+      let respQuery = supabase
         .from("responses")
-        .select("day_number, is_correct, correct")
+        .select("day_number, question_number, is_correct, correct")
         .eq("student_id", studentId);
+      if (cut) respQuery = respQuery.gte("created_at", cut);
 
-      if (rData) {
-        const grouped = rData.reduce((acc, curr) => {
-          if (!acc[curr.day_number]) {
-            acc[curr.day_number] = { day: curr.day_number, total: 0, correct: 0 };
-          }
-          acc[curr.day_number].total += 1;
-          const ok = curr.is_correct ?? curr.correct;
-          if (ok) acc[curr.day_number].correct += 1;
-          return acc;
-        }, {});
-        setCompletedDays(Object.values(grouped).sort((a, b) => a.day - b.day));
+      const [{ data: completedSummaries }, { data: rData }] = await Promise.all([
+        dsQuery,
+        respQuery,
+      ]);
+
+      const byDay = new Map();
+      for (const row of completedSummaries || []) {
+        const dayNum = Number(row.day);
+        if (!Number.isFinite(dayNum) || dayNum < 1) continue;
+        byDay.set(dayNum, {
+          day: dayNum,
+          total: Number(row.total_questions) || 10,
+          correct:
+            row.correct_count != null
+              ? Number(row.correct_count) || 0
+              : Math.round(((Number(row.score) || 0) / 100) * (Number(row.total_questions) || 10)),
+        });
       }
+
+      const responsesByDay = new Map();
+      for (const row of rData || []) {
+        const dayNum = Number(row.day_number);
+        if (!Number.isFinite(dayNum) || dayNum < 1) continue;
+        if (!responsesByDay.has(dayNum)) {
+          responsesByDay.set(dayNum, { uniqueQuestions: new Set(), correct: 0 });
+        }
+        const agg = responsesByDay.get(dayNum);
+        const qn = Number(row.question_number);
+        if (Number.isFinite(qn)) agg.uniqueQuestions.add(qn);
+        const ok = row.is_correct ?? row.correct;
+        if (ok) agg.correct += 1;
+      }
+
+      for (const [dayNum, agg] of responsesByDay.entries()) {
+        if (byDay.has(dayNum)) continue;
+        const total = agg.uniqueQuestions.size;
+        if (total >= 10) {
+          byDay.set(dayNum, {
+            day: dayNum,
+            total,
+            correct: agg.correct,
+          });
+        }
+      }
+
+      setCompletedDays([...byDay.values()].sort((a, b) => a.day - b.day));
       setLoading(false);
     }
     fetchData();
   }, [studentId]);
 
-  // Next mission day: at least the day after your highest completed mission, and at least
-  // students.current_day (set by program / admin for class calendar). If a learner missed
-  // day 2 but current_day is 3, they get day 3 — skipped gaps are not forced in order.
+  // Pre-launch testing: legacy next day = max(sequential, current_day). After launch: one class
+  // mission per calendar day (no makeup — everyone takes the same mission as the program).
+  const programCtx = getProgramMissionContext(new Date());
   const sequentialNext =
     completedDays.length > 0
       ? Math.max(...completedDays.map((d) => d.day)) + 1
       : 1;
   const calendarDay = Number(student?.current_day) || 1;
-  const nextQuizDay =
+  const legacyNext =
     student || completedDays.length > 0
       ? Math.min(40, Math.max(1, sequentialNext, calendarDay))
       : 1;
+  const nextQuizDay = programCtx.useLegacyProgression
+    ? legacyNext
+    : Math.min(40, programCtx.officialDay != null ? programCtx.officialDay : 1);
 
   useEffect(() => {
     if (loading || !studentId || stayOnDashboard) return;
+    const ctx = getProgramMissionContext(new Date());
+    if (
+      !ctx.useLegacyProgression &&
+      ctx.officialDay != null &&
+      ctx.phase === "live"
+    ) {
+      const doneToday = completedDays.some((d) => d.day === ctx.officialDay);
+      if (doneToday) return;
+    }
     router.replace(
       `/quiz?day=${nextQuizDay}&student_id=${encodeURIComponent(studentId)}`
     );
-  }, [loading, studentId, stayOnDashboard, nextQuizDay, router]);
+  }, [loading, studentId, stayOnDashboard, nextQuizDay, router, completedDays]);
 
   const handleLogOff = async () => {
     try {
@@ -317,23 +375,33 @@ function DashboardContent() {
                   const isActive = dayNum === nextDay;
                   const isLocked = dayNum > nextDay;
                   const isSkipped = !isCompleted && dayNum < nextDay;
-                  const canOpenMissionLog = dayNum < nextDay && !!studentId;
+                  /** Up to current day: clickable — past → review, READY (active) → quiz. Future days stay locked. */
+                  const archiveClickable = !!studentId && !isLocked;
+
+                  const goArchiveNavigate = () => {
+                    if (!studentId || isLocked) return;
+                    if (isActive) {
+                      router.push(
+                        `/quiz?day=${dayNum}&student_id=${encodeURIComponent(studentId)}`
+                      );
+                    } else {
+                      router.push(
+                        `/review?day=${dayNum}&student_id=${encodeURIComponent(studentId)}`
+                      );
+                    }
+                  };
 
                   return (
                     <div 
                       key={dayNum} 
-                      onClick={() => {
-                        if (canOpenMissionLog) {
-                          router.push(`/review?day=${dayNum}&student_id=${encodeURIComponent(studentId)}`);
-                        }
-                      }}
-                      role={canOpenMissionLog ? "button" : undefined}
-                      tabIndex={canOpenMissionLog ? 0 : -1}
+                      onClick={goArchiveNavigate}
+                      role={archiveClickable ? "button" : undefined}
+                      tabIndex={archiveClickable ? 0 : -1}
                       onKeyDown={(e) => {
-                        if (!canOpenMissionLog) return;
+                        if (!archiveClickable) return;
                         if (e.key === "Enter" || e.key === " ") {
                           e.preventDefault();
-                          router.push(`/review?day=${dayNum}&student_id=${encodeURIComponent(studentId)}`);
+                          goArchiveNavigate();
                         }
                       }}
                       style={{
@@ -341,7 +409,7 @@ function DashboardContent() {
                         opacity: isLocked || isSkipped ? 0.45 : 1,
                         filter: isLocked ? "grayscale(100%)" : isSkipped ? "grayscale(55%)" : "none",
                         border: isCompleted ? "1px solid #10b981" : isActive ? "1px solid #FF6A1A" : isSkipped ? "1px solid #4B5563" : "1px solid #333",
-                        cursor: canOpenMissionLog ? "pointer" : "default"
+                        cursor: archiveClickable ? "pointer" : "default",
                       }}
                     >
                       <span style={{ color: isLocked || isSkipped ? "#6B7280" : "#FF6A1A", fontWeight: "bold", fontSize: "11px" }}>DAY {dayNum}</span>

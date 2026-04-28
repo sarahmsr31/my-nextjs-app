@@ -81,14 +81,14 @@ export default function HomePage() {
           <p style={{ color: "#94A3B8", fontSize: "13px", letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: "16px" }}>
             English · Growth · Reflection
           </p>
-          <h1 style={{ fontSize: "clamp(2rem, 4vw, 2.75rem)", fontWeight: 800, color: "#F8FAFC", lineHeight: 1.15, margin: "0 0 20px" }}>
+          <h1 style={{ fontSize: "clamp(2rem, 4vw, 2.75rem)", fontWeight: 800, color: "#0F172A", lineHeight: 1.15, margin: "0 0 20px" }}>
             Learn through questions,{" "}
             <span style={{ color: c.GOLD }}>not just answers</span>
           </h1>
           <p
             style={{
               fontSize: "clamp(1rem, 2vw, 1.15rem)",
-              color: "#CBD5E1",
+              color: "#334155",
               maxWidth: "640px",
               margin: "0 auto 28px",
               lineHeight: 1.65,
@@ -104,7 +104,7 @@ export default function HomePage() {
               padding: "14px 28px",
               borderRadius: "14px",
               border: `1px solid ${c.GOLD}`,
-              color: c.GOLD_HIGHLIGHT,
+              color: "#C2410C",
               fontWeight: 700,
               textDecoration: "none",
               fontSize: "15px",
@@ -198,10 +198,10 @@ export default function HomePage() {
             border: "1px solid rgba(255, 106, 26, 0.28)",
           }}
         >
-          <p style={{ margin: "0 0 16px", color: "#E2E8F0", fontSize: "17px", fontWeight: 600 }}>
+          <p style={{ margin: "0 0 16px", color: "#1F2937", fontSize: "17px", fontWeight: 600 }}>
             Ready for today&apos;s mission?
           </p>
-          <Link href="/login" style={{ color: c.GOLD_HIGHLIGHT, fontWeight: 700, fontSize: "15px" }}>
+          <Link href="/login" style={{ color: "#C2410C", fontWeight: 700, fontSize: "15px" }}>
             Go to login →
           </Link>
         </section>

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../../utils/supabase/client";
 import { BRANDING } from "../../utils/branding";
+import { getProgramMissionContext } from "../../utils/programCalendar";
 
 const bg = "#FFFFFF";
 const card = "#F8FAFC";
@@ -19,12 +20,11 @@ export default function LoginPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [step, setStep] = useState("login"); // "login", "confirm", or "onboarding"
+  const [step, setStep] = useState("login"); // "login" or "confirm"
   const [studentData, setStudentData] = useState(null);
   
   const [form, setForm] = useState({
     access_code: "",
-    preferred_name: "",
   });
 
   async function handleLogin(e) {
@@ -35,7 +35,7 @@ export default function LoginPage() {
     try {
       const { data, error: dbError } = await supabase
         .from("students")
-        .select("id, student_name, preferred_name, is_setup_complete, current_day")
+        .select("id, student_name, current_day")
         .eq("access_code", form.access_code.trim().toUpperCase())
         .single();
 
@@ -46,38 +46,10 @@ export default function LoginPage() {
       }
 
       setStudentData(data);
-
-      // Determine next step
-      if (!data.is_setup_complete) {
-        setStep("onboarding");
-      } else {
-        setStep("confirm");
-      }
+      setStep("confirm");
     } catch (err) {
       setError("System error. Please try again later.");
     } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleOnboarding(e) {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      const { error: updateError } = await supabase
-        .from("students")
-        .update({
-          preferred_name: form.preferred_name.trim(),
-          is_setup_complete: true,
-        })
-        .eq("id", studentData.id);
-
-      if (updateError) throw updateError;
-
-      launchMission(studentData.id);
-    } catch (err) {
-      setError("Failed to save nickname.");
       setLoading(false);
     }
   }
@@ -123,7 +95,7 @@ export default function LoginPage() {
             />
           </button>
           <h1 style={{ color: gold, fontSize: "24px", fontWeight: 800, margin: "0 0 8px" }}>
-            {step === "login" ? "Mission Login" : step === "onboarding" ? "Navigator Setup" : "Identify Confirmed"}
+            {step === "login" ? "Mission Login" : "Confirm Identity"}
           </h1>
         </div>
 
@@ -148,37 +120,31 @@ export default function LoginPage() {
             </motion.form>
           )}
 
-          {step === "onboarding" && (
-            <motion.form key="onboarding" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} onSubmit={handleOnboarding} style={formStyle}>
-              <p style={{ color: muted, textAlign: "center", marginBottom: "10px" }}>Welcome, Navigator! What should we call you?</p>
-              <input
-                type="text"
-                required
-                placeholder="e.g. Commander Sarah"
-                value={form.preferred_name}
-                onChange={(e) => setForm({ ...form, preferred_name: e.target.value })}
-                style={inputStyle}
-              />
-              <button type="submit" disabled={loading} style={primaryButtonStyle(loading)}>
-                {loading ? "Saving..." : "Start Mission"}
-              </button>
-            </motion.form>
-          )}
+          {step === "confirm" && (() => {
+            const missionCtx = getProgramMissionContext(new Date());
+            const dayCaption =
+              missionCtx.useLegacyProgression || missionCtx.phase === "prelaunch"
+                ? `Day ${Number(studentData?.current_day) || 1} — practice / testing`
+                : `Class mission Day ${missionCtx.officialDay != null ? missionCtx.officialDay : "?"} — same mission as everyone (no makeup days)`;
 
-          {step === "confirm" && (
+            return (
             <motion.div key="confirm" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} style={{ textAlign: "center" }}>
+              <p style={{ color: muted, marginBottom: "12px", lineHeight: 1.5 }}>
+                Welcome <strong>{studentData?.student_name}</strong>! Please confirm your identity/name before we proceed.
+              </p>
               <div style={identityBox}>
-                <span style={{ fontSize: "22px", color: gold, fontWeight: "bold" }}>{studentData.preferred_name}</span>
-                <p style={{ color: muted, fontSize: "12px", marginTop: "4px" }}>Day {studentData.current_day} Ready for Launch</p>
+                <span style={{ fontSize: "22px", color: gold, fontWeight: "bold" }}>{studentData.student_name}</span>
+                <p style={{ color: muted, fontSize: "12px", marginTop: "4px" }}>{dayCaption}</p>
               </div>
               <button onClick={() => launchMission(studentData.id)} style={primaryButtonStyle(false)}>
-                Confirm & Launch
+                Confirm & Continue
               </button>
               <button onClick={() => setStep("login")} style={{ background: "none", border: "none", color: "#4B5563", marginTop: "15px", cursor: "pointer", fontSize: "13px" }}>
                 Not you? Switch account
               </button>
             </motion.div>
-          )}
+            );
+          })()}
         </AnimatePresence>
       </motion.div>
       </div>
@@ -198,6 +164,6 @@ const formStyle = { display: "flex", flexDirection: "column", gap: "20px" };
 const inputGroupStyle = { display: "flex", flexDirection: "column", gap: "8px" };
 const labelStyle = { color: labelColor, fontSize: "14px", fontWeight: 600 };
 const errorStyle = { color: "#FCA5A5", fontSize: "14px", textAlign: "center" };
-const inputStyle = { width: "100%", padding: "14px", borderRadius: "12px", border: `1px solid ${border}`, background: inputBg, color: "#FFFFFF", fontSize: "16px", outline: "none" };
+const inputStyle = { width: "100%", padding: "14px", borderRadius: "12px", border: `1px solid ${border}`, background: inputBg, color: "#1F2937", fontSize: "16px", outline: "none" };
 const primaryButtonStyle = (disabled) => ({ width: "100%", padding: "16px", borderRadius: "14px", border: "none", background: disabled ? "#5c4d36" : gold, color: "#1A1B1C", fontWeight: 800, cursor: disabled ? "not-allowed" : "pointer", textTransform: "uppercase" });
 const identityBox = { background: "#2B4166", padding: "20px", borderRadius: "16px", border: `1px solid ${border}`, marginBottom: "20px" };

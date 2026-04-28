@@ -54,7 +54,7 @@ function ManagerContent() {
     <div style={containerStyle}>
       <main style={{ maxWidth: "1050px", margin: "0 auto", width: "100%" }}>
         <h1 style={titleStyle}>Manager Leaderboard</h1>
-        <p style={subtitleStyle}>Hidden URL view for daily learner progress</p>
+        <p style={subtitleStyle}>Daily Learner Progress</p>
 
         {loading ? <p style={mutedStyle}>Loading leaderboard...</p> : null}
         {error ? <p style={errorStyle}>{error}</p> : null}
