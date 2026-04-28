@@ -2,12 +2,20 @@ import Link from "next/link";
 import { BRANDING } from "../utils/branding";
 
 export const metadata = {
-  title: "Ad Astra Learning — Home",
+  title: "Ad Astra Leadership — Home",
   description:
-    "Ad Astra pairs daily missions with question-based learning so students build English and self-awareness through reflection, not drills.",
+    "Ad Astra Leadership uses question-based learning, feedback, recall, and reapplication to help learners remember—and use—what they study.",
 };
 
 const c = BRANDING.COLORS;
+
+const cardLight = {
+  background: "#FFFFFF",
+  border: "1px solid #E2E8F0",
+  borderRadius: "24px",
+  padding: "28px 28px 32px",
+  boxShadow: "0 12px 28px rgba(15, 23, 42, 0.06)",
+};
 
 export default function HomePage() {
   return (
@@ -22,7 +30,7 @@ export default function HomePage() {
     >
       <header
         style={{
-          borderBottom: "1px solid #2D2F31",
+          borderBottom: "1px solid #E2E8F0",
           padding: "16px 24px",
           display: "flex",
           alignItems: "center",
@@ -43,15 +51,15 @@ export default function HomePage() {
             height={44}
             style={{ borderRadius: "50%", border: `1px solid ${c.GOLD}`, objectFit: "cover" }}
           />
-          <span style={{ fontWeight: 800, letterSpacing: "0.04em", color: c.GOLD, fontSize: "15px" }}>
-            {BRANDING.COMPANY_NAME.toUpperCase()}
+          <span style={{ fontWeight: 800, letterSpacing: "0.04em", color: c.GOLD, fontSize: "14px" }}>
+            AD ASTRA LEADERSHIP
           </span>
         </Link>
-        <nav style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+        <nav style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}>
           <Link
             href="/"
             style={{
-              color: "#94A3B8",
+              color: "#64748B",
               fontWeight: 600,
               fontSize: "14px",
               textDecoration: "none",
@@ -62,13 +70,14 @@ export default function HomePage() {
           <Link
             href="/login"
             style={{
-              padding: "10px 22px",
+              padding: "11px 22px",
               borderRadius: "999px",
-              background: c.GOLD,
-              color: c.CHARCOAL,
+              background: `linear-gradient(135deg, ${c.GOLD} 0%, #EA580C 100%)`,
+              color: "#FFFFFF",
               fontWeight: 700,
               fontSize: "14px",
               textDecoration: "none",
+              boxShadow: "0 8px 20px rgba(255, 106, 26, 0.35)",
             }}
           >
             Student login
@@ -76,134 +85,210 @@ export default function HomePage() {
         </nav>
       </header>
 
-      <main style={{ flex: 1, width: "100%", maxWidth: "1100px", margin: "0 auto", padding: "32px 24px 48px" }}>
-        <section style={{ textAlign: "center", marginBottom: "56px" }}>
-          <p style={{ color: "#94A3B8", fontSize: "13px", letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: "16px" }}>
-            English · Growth · Reflection
+      <main style={{ flex: 1, width: "100%", maxWidth: "1100px", margin: "0 auto", padding: "32px 24px 56px" }}>
+        <section style={{ textAlign: "center", marginBottom: "48px" }}>
+          <p style={{ color: "#475569", fontSize: "13px", letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: "14px" }}>
+            Remember · Recall · Replicate
           </p>
-          <h1 style={{ fontSize: "clamp(2rem, 4vw, 2.75rem)", fontWeight: 800, color: "#0F172A", lineHeight: 1.15, margin: "0 0 20px" }}>
-            Learn through questions,{" "}
-            <span style={{ color: c.GOLD }}>not just answers</span>
+          <h1 style={{ fontSize: "clamp(2rem, 4vw, 2.85rem)", fontWeight: 800, color: "#0F172A", lineHeight: 1.15, margin: "0 0 18px" }}>
+            A platform built for{" "}
+            <span style={{ color: c.GOLD }}>how memory becomes skill</span>
           </h1>
           <p
             style={{
-              fontSize: "clamp(1rem, 2vw, 1.15rem)",
+              fontSize: "clamp(1rem, 2vw, 1.12rem)",
               color: "#334155",
-              maxWidth: "640px",
-              margin: "0 auto 28px",
-              lineHeight: 1.65,
+              maxWidth: "680px",
+              margin: "0 auto 26px",
+              lineHeight: 1.7,
             }}
           >
-            Ad Astra is a structured mission experience: short daily flights of thoughtful items, instant feedback, and an
-            instructor-style debrief—so every learner sees how they think, not only what they scored.
+            <strong style={{ color: "#1E293B" }}>Ad Astra Leadership</strong> is a learning accelerator: short daily missions,
+            targeted feedback, and structured debriefs designed to strengthen retention—so ideas can be recalled accurately and
+            reapplied in new contexts.
           </p>
-          <Link
-            href="/login"
-            style={{
-              display: "inline-block",
-              padding: "14px 28px",
-              borderRadius: "14px",
-              border: `1px solid ${c.GOLD}`,
-              color: "#C2410C",
-              fontWeight: 700,
-              textDecoration: "none",
-              fontSize: "15px",
-            }}
-          >
-            Enter with your access code
-          </Link>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", justifyContent: "center", alignItems: "center" }}>
+            <Link
+              href="/login"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "10px",
+                padding: "14px 26px",
+                borderRadius: "999px",
+                background: c.GOLD,
+                color: "#FFFFFF",
+                fontWeight: 700,
+                textDecoration: "none",
+                fontSize: "15px",
+                boxShadow: "0 10px 24px rgba(255, 106, 26, 0.35)",
+              }}
+            >
+              Student sign-in
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </Link>
+            <span style={{ color: "#94A3B8", fontSize: "14px" }}>Use your access code</span>
+          </div>
         </section>
 
-        <section
-          aria-labelledby="about-heading"
-          style={{
-            background: "#242526",
-            border: "1px solid #333",
-            borderRadius: "24px",
-            padding: "28px 28px 32px",
-            marginBottom: "28px",
-            boxShadow: "0 24px 48px rgba(0,0,0,0.25)",
-          }}
-        >
-          <h2 id="about-heading" style={{ fontSize: "1.35rem", color: c.GOLD, margin: "0 0 16px", fontWeight: 800 }}>
-            About Ad Astra
+        <section aria-labelledby="about-heading" style={{ ...cardLight, marginBottom: "22px" }}>
+          <h2 id="about-heading" style={{ fontSize: "1.35rem", color: c.GOLD, margin: "0 0 14px", fontWeight: 800 }}>
+            About Ad Astra Leadership
           </h2>
-          <p style={{ margin: "0 0 14px", lineHeight: 1.7, color: "#D1D5DB", fontSize: "16px" }}>
-            <strong style={{ color: "#F1F5F9" }}>Ad Astra</strong> (“to the stars”) is built for young people who are
-            learning English as part of becoming confident communicators. We combine a clear 40-day arc, mission language,
-            and supportive AI debriefs so practice feels like progress—not pressure.
+          <p style={{ margin: "0 0 12px", lineHeight: 1.75, color: "#334155", fontSize: "16px" }}>
+            We focus on <strong style={{ color: "#0F172A" }}>question-based learning</strong>—prompts that surface what you
+            know, where you hesitate, and how ideas connect—paired with timely feedback so learners can correct course while it
+            still matters. The goal is durable recall and confident reapplication, not a one-time score.
           </p>
-          <p style={{ margin: 0, lineHeight: 1.7, color: "#94A3B8", fontSize: "15px" }}>
-            Parents and schools get readable summaries of strengths and focus areas, while students stay in the pilot
-            seat: honest effort, two tries when they need them, and encouragement to notice their own growth.
+          <p style={{ margin: 0, lineHeight: 1.75, color: "#475569", fontSize: "15px" }}>
+            This first pilot follows a structured <strong style={{ color: "#1E293B" }}>40‑day arc</strong> with middle school
+            students. Looking ahead, we aim to extend the same approach to{" "}
+            <strong style={{ color: "#1E293B" }}>medical trainees</strong>—where recall and replication carry high stakes—and
+            other learner groups who need practice that translates into performance.
           </p>
         </section>
 
-        <section
-          aria-labelledby="qbl-heading"
-          style={{
-            background: "#242526",
-            border: "1px solid #333",
-            borderRadius: "24px",
-            padding: "28px 28px 32px",
-            marginBottom: "36px",
-            boxShadow: "0 24px 48px rgba(0,0,0,0.25)",
-          }}
-        >
+        <section aria-labelledby="qbl-heading" style={{ ...cardLight, marginBottom: "36px" }}>
           <h2 id="qbl-heading" style={{ fontSize: "1.35rem", color: c.GOLD, margin: "0 0 8px", fontWeight: 800 }}>
             Question-based learning
           </h2>
-          <p style={{ margin: "0 0 24px", color: "#94A3B8", fontSize: "14px" }}>
-            A research-backed stance: people learn deeply when they wrestle with meaningful questions—not only when they
-            consume explanations.
+          <p style={{ margin: "0 0 22px", color: "#64748B", fontSize: "14px", lineHeight: 1.6 }}>
+            Learning sticks when learners retrieve, judge, and apply—again and again—in meaningful contexts.
           </p>
 
-          <div style={{ display: "grid", gap: "22px" }}>
+          <div style={{ display: "grid", gap: "20px" }}>
             <div style={{ borderLeft: `3px solid ${c.GOLD}`, paddingLeft: "18px" }}>
-              <h3 style={{ margin: "0 0 8px", fontSize: "1.05rem", color: "#F1F5F9" }}>What it is</h3>
-              <p style={{ margin: 0, lineHeight: 1.65, color: "#CBD5E1", fontSize: "15px" }}>
-                Instead of long lectures first, question-based learning starts from{" "}
-                <strong style={{ color: "#E2E8F0" }}>curiosity and problems</strong>: prompts that expose what you
-                already know, where you hesitate, and which ideas connect. Answers matter—but the thinking{" "}
-                <em>before</em> and <em>after</em> the click is where durable learning lives.
+              <h3 style={{ margin: "0 0 8px", fontSize: "1.05rem", color: "#0F172A" }}>Recall</h3>
+              <p style={{ margin: 0, lineHeight: 1.7, color: "#475569", fontSize: "15px" }}>
+                Questions cue active retrieval—not passive re-reading—so durable memory has a chance to form.
               </p>
             </div>
 
-            <div style={{ borderLeft: "3px solid #475569", paddingLeft: "18px" }}>
-              <h3 style={{ margin: "0 0 8px", fontSize: "1.05rem", color: "#F1F5F9" }}>Why it works here</h3>
-              <p style={{ margin: 0, lineHeight: 1.65, color: "#CBD5E1", fontSize: "15px" }}>
-                Short daily missions keep cognitive load friendly. Each item is a question moment: predict, choose,
-                revise, then read concise feedback. That loop mirrors how experts learn in the wild—hypothesis, test,
-                adjust—at a pace fit for school-aged learners.
+            <div style={{ borderLeft: "3px solid #94A3B8", paddingLeft: "18px" }}>
+              <h3 style={{ margin: "0 0 8px", fontSize: "1.05rem", color: "#0F172A" }}>Feedback</h3>
+              <p style={{ margin: 0, lineHeight: 1.7, color: "#475569", fontSize: "15px" }}>
+                Immediate, specific feedback narrows the gap between a guess and a grounded understanding.
               </p>
             </div>
 
-            <div style={{ borderLeft: "3px solid #334155", paddingLeft: "18px" }}>
-              <h3 style={{ margin: "0 0 8px", fontSize: "1.05rem", color: "#F1F5F9" }}>How Ad Astra uses it</h3>
-              <ul style={{ margin: 0, paddingLeft: "1.15rem", lineHeight: 1.75, color: "#CBD5E1", fontSize: "15px" }}>
-                <li>Mission briefings frame the day as a purpose, not a test.</li>
-                <li>Items probe understanding across topics, with hints when learners need a nudge.</li>
-                <li>End-of-mission debriefs turn performance into language about strengths and next steps.</li>
-              </ul>
+            <div style={{ borderLeft: "3px solid #CBD5E1", paddingLeft: "18px" }}>
+              <h3 style={{ margin: "0 0 8px", fontSize: "1.05rem", color: "#0F172A" }}>Replication</h3>
+              <p style={{ margin: 0, lineHeight: 1.7, color: "#475569", fontSize: "15px" }}>
+                Missions emphasize reapplication: similar-but-new situations where learners show they can use what they remembered,
+                not only recognize it once.
+              </p>
             </div>
+          </div>
+        </section>
+
+        <section aria-labelledby="team-heading" style={{ marginBottom: "32px" }}>
+          <h2 id="team-heading" style={{ fontSize: "1.25rem", color: "#0F172A", margin: "0 0 18px", fontWeight: 800 }}>
+            Team
+          </h2>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+              gap: "22px",
+            }}
+          >
+            <article style={{ ...cardLight, padding: "24px" }}>
+              <div
+                aria-label="Sarah Ramaiah photo placeholder"
+                style={{
+                  width: "112px",
+                  height: "112px",
+                  borderRadius: "20px",
+                  background: "linear-gradient(145deg, #F1F5F9 0%, #E2E8F0 100%)",
+                  border: "1px dashed #CBD5E1",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#94A3B8",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  marginBottom: "16px",
+                }}
+              >
+                Headshot
+              </div>
+              <h3 style={{ margin: "0 0 6px", fontSize: "1.1rem", color: "#0F172A" }}>Sarah Ramaiah</h3>
+              <p style={{ margin: "0 0 14px", color: c.GOLD, fontWeight: 700, fontSize: "14px" }}>PhD, MS Ed</p>
+              <p style={{ margin: 0, lineHeight: 1.65, color: "#475569", fontSize: "15px" }}>
+                Brief biography will appear here—your role, expertise, and what you&apos;re building with Ad Astra Leadership.
+              </p>
+            </article>
+
+            <article style={{ ...cardLight, padding: "24px" }}>
+              <div
+                aria-label="Allen Mannepalli photo placeholder"
+                style={{
+                  width: "112px",
+                  height: "112px",
+                  borderRadius: "20px",
+                  background: "linear-gradient(145deg, #F1F5F9 0%, #E2E8F0 100%)",
+                  border: "1px dashed #CBD5E1",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#94A3B8",
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  marginBottom: "16px",
+                }}
+              >
+                Headshot
+              </div>
+              <h3 style={{ margin: "0 0 6px", fontSize: "1.1rem", color: "#0F172A" }}>Allen Mannepalli</h3>
+              <p style={{ margin: "0 0 14px", color: c.GOLD, fontWeight: 700, fontSize: "14px" }}>MS</p>
+              <p style={{ margin: 0, lineHeight: 1.65, color: "#475569", fontSize: "15px" }}>
+                Brief biography will appear here—your role, focus, and what you contribute to Ad Astra Leadership&apos;s pilots and
+                future programs.
+              </p>
+            </article>
           </div>
         </section>
 
         <section
           style={{
-            textAlign: "center",
-            padding: "28px 20px",
-            borderRadius: "20px",
-            background: "rgba(255, 106, 26, 0.1)",
-            border: "1px solid rgba(255, 106, 26, 0.28)",
+            padding: "32px 24px",
+            borderRadius: "24px",
+            background: "linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 40%, #F8FAFC 100%)",
+            border: "1px solid rgba(255, 106, 26, 0.22)",
+            boxShadow: "0 16px 40px rgba(15, 23, 42, 0.06)",
           }}
         >
-          <p style={{ margin: "0 0 16px", color: "#1F2937", fontSize: "17px", fontWeight: 600 }}>
-            Ready for today&apos;s mission?
-          </p>
-          <Link href="/login" style={{ color: "#C2410C", fontWeight: 700, fontSize: "15px" }}>
-            Go to login →
-          </Link>
+          <div style={{ maxWidth: "520px", margin: "0 auto", textAlign: "center" }}>
+            <p style={{ margin: "0 0 8px", color: "#0F172A", fontSize: "18px", fontWeight: 800 }}>Launch today&apos;s mission</p>
+            <p style={{ margin: "0 0 22px", color: "#64748B", fontSize: "15px", lineHeight: 1.6 }}>
+              Sign in with your student access code to open the dashboard and today&apos;s session.
+            </p>
+            <Link
+              href="/login"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "10px",
+                width: "100%",
+                maxWidth: "320px",
+                padding: "16px 24px",
+                borderRadius: "16px",
+                background: "#0F172A",
+                color: "#FFFFFF",
+                fontWeight: 700,
+                fontSize: "16px",
+                textDecoration: "none",
+              }}
+            >
+              Open student portal
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </Link>
+          </div>
         </section>
       </main>
 

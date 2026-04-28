@@ -91,7 +91,7 @@ export default function LoginPage() {
             <img
               src={BRANDING.LOGO_URL}
               alt="Ad Astra Academy"
-              style={{ width: "100%", height: "auto", objectFit: "contain", display: "block", pointerEvents: "none" }}
+              style={logoImgStyle}
             />
           </button>
           <h1 style={{ color: gold, fontSize: "24px", fontWeight: 800, margin: "0 0 8px" }}>
@@ -159,7 +159,24 @@ const homeLinkBarStyle = { width: "100%", maxWidth: "440px", margin: "0 auto 8px
 const homeLinkStyle = { color: "#94A3B8", fontSize: "13px", fontWeight: 600, textDecoration: "none" };
 const loginMainStyle = { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", width: "100%" };
 const cardStyle = { background: card, borderRadius: "24px", border: `1px solid ${border}`, maxWidth: "400px", width: "100%", padding: "40px 36px", boxShadow: "0 24px 48px rgba(0,0,0,0.45)" };
-const logoStyle = { display: "block", margin: "0 auto 20px", maxWidth: "160px", width: "100%", height: "auto", objectFit: "contain" };
+/** Circular crop: square frame + rounded mask so corners are clipped into a circle. */
+const logoStyle = {
+  display: "block",
+  margin: "0 auto 20px",
+  width: "120px",
+  height: "120px",
+  borderRadius: "50%",
+  overflow: "hidden",
+  flexShrink: 0,
+};
+const logoImgStyle = {
+  width: "100%",
+  height: "100%",
+  objectFit: "cover",
+  objectPosition: "center",
+  display: "block",
+  pointerEvents: "none",
+};
 const formStyle = { display: "flex", flexDirection: "column", gap: "20px" };
 const inputGroupStyle = { display: "flex", flexDirection: "column", gap: "8px" };
 const labelStyle = { color: labelColor, fontSize: "14px", fontWeight: 600 };
