@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { timingSafeEqual } from "crypto";
 import { createServerClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { syncAdminLeaderboard } from "@/utils/syncAdminLeaderboard";
 
 function tokenOk(provided, expected) {
   if (!expected || typeof expected !== "string") return false;
@@ -34,6 +35,14 @@ export async function GET(request) {
 
   const admin = createAdminClient();
   const client = admin ?? createServerClient();
+  let syncError = null;
+
+  // Self-heal stale leaderboard data: when service role is available, rebuild
+  // from completed daily_summaries before reading manager rows.
+  if (admin) {
+    const { error } = await syncAdminLeaderboard(admin);
+    syncError = error?.message || null;
+  }
 
   const { data: leaderboard, error: lbError } = await client
     .from("admin_leaderboard")
@@ -84,5 +93,6 @@ export async function GET(request) {
     leaderboard: leaderboard || [],
     recentDays,
     dailyError: dailyError?.message || null,
+    syncError,
   });
 }
