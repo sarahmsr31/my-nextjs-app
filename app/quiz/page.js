@@ -534,11 +534,11 @@ function QuizContent() {
                 )}
 
                 {/* NEW AI FEEDBACK BOX */}
-                <div style={{ borderTop: "1px solid #333", paddingTop: "20px", textAlign: "left" }}>
-                  <p style={{ fontSize: "14px", color: "#FF6A1A", fontWeight: "bold", marginBottom: "5px" }}>
+                <div style={{ borderTop: "1px solid #E2E8F0", paddingTop: "20px", textAlign: "left" }}>
+                  <p style={{ fontSize: "15px", color: "#C2410C", fontWeight: 800, marginBottom: "8px", letterSpacing: "0.02em" }}>
                     🚀 INSTRUCTOR DEBRIEF:
                   </p>
-                  <p style={{ fontSize: "15px", lineHeight: "1.6", color: "#E2E8F0", fontStyle: "italic" }}>
+                  <p style={{ fontSize: "18px", lineHeight: "1.75", color: "#0F172A", fontStyle: "normal", fontWeight: 600 }}>
                     "{aiDebrief}"
                   </p>
                 </div>
