@@ -19,6 +19,51 @@ function displayName(s) {
   return pref || first || legal || "Student";
 }
 
+function buildLeaderboardFromDaily(dailyRows, studentsById) {
+  const byStudentDay = new Map();
+  for (const r of dailyRows || []) {
+    const sid = r.student_id;
+    const day = Number(r.day);
+    if (!sid || !Number.isFinite(day) || day < 1 || day > 40) continue;
+    const key = `${sid}:${day}`;
+    const prev = byStudentDay.get(key);
+    // Keep latest completion snapshot for a student/day.
+    if (!prev || String(r.created_at || "") > String(prev.created_at || "")) {
+      byStudentDay.set(key, {
+        student_id: sid,
+        day,
+        score: Number(r.score) || 0,
+        created_at: r.created_at || null,
+      });
+    }
+  }
+
+  const byDay = new Map();
+  for (const row of byStudentDay.values()) {
+    if (!byDay.has(row.day)) byDay.set(row.day, []);
+    byDay.get(row.day).push(row);
+  }
+
+  const out = [];
+  for (const [day, rows] of [...byDay.entries()].sort((a, b) => a[0] - b[0])) {
+    rows.sort((a, b) => b.score - a.score);
+    let rank = 1;
+    for (let i = 0; i < rows.length; i++) {
+      if (i > 0 && rows[i].score < rows[i - 1].score) rank = i + 1;
+      const s = studentsById.get(rows[i].student_id);
+      out.push({
+        student_name: s ? displayName(s) : "Student",
+        class: s?.class != null ? String(s.class).trim() : "",
+        access_code: s?.access_code?.trim() || "",
+        total_score: rows[i].score,
+        days_completed: day,
+        rank,
+      });
+    }
+  }
+  return out;
+}
+
 export async function GET(request) {
   const expected = process.env.MANAGER_PROGRESS_TOKEN;
   const token = request.nextUrl.searchParams.get("token");
@@ -44,16 +89,17 @@ export async function GET(request) {
     syncError = error?.message || null;
   }
 
-  const { data: leaderboard, error: lbError } = await client
-    .from("admin_leaderboard")
-    .select("student_name, class, access_code, total_score, days_completed, rank")
-    .order("days_completed", { ascending: true })
-    .order("rank", { ascending: true });
+  const { data: dailyRows, error: dailyError } = await client
+    .from("daily_summaries")
+    .select("student_id, day, score, created_at")
+    .eq("is_completed", true)
+    .order("created_at", { ascending: false })
+    .limit(5000);
 
-  if (lbError) {
+  if (dailyError) {
     return NextResponse.json(
       {
-        error: lbError.message,
+        error: dailyError.message,
         hint: admin
           ? null
           : "If RLS blocks reads, set SUPABASE_SERVICE_ROLE_KEY for this API route only.",
@@ -62,37 +108,33 @@ export async function GET(request) {
     );
   }
 
-  const { data: dailyRows, error: dailyError } = await client
-    .from("daily_summaries")
-    .select("student_id, day, score, created_at")
-    .eq("is_completed", true)
-    .order("created_at", { ascending: false })
-    .limit(120);
-
-  let recentDays = [];
-  if (!dailyError && dailyRows?.length) {
-    const ids = [...new Set(dailyRows.map((r) => r.student_id).filter(Boolean))];
+  const ids = [...new Set((dailyRows || []).map((r) => r.student_id).filter(Boolean))];
+  let studentsById = new Map();
+  if (ids.length) {
     const { data: studs } = await client
       .from("students")
-      .select("id, student_name, preferred_name, class")
+      .select("id, student_name, preferred_name, class, access_code")
       .in("id", ids);
-    const byId = new Map((studs || []).map((s) => [s.id, s]));
-    recentDays = dailyRows.map((r) => {
-      const s = byId.get(r.student_id);
-      return {
-        student_name: s ? displayName(s) : "—",
-        class: s?.class != null ? String(s.class).trim() : "",
-        day: r.day,
-        score: r.score,
-        created_at: r.created_at,
-      };
-    });
+    studentsById = new Map((studs || []).map((s) => [s.id, s]));
   }
 
+  const leaderboard = buildLeaderboardFromDaily(dailyRows || [], studentsById);
+
+  const recentDays = (dailyRows || []).slice(0, 120).map((r) => {
+    const s = studentsById.get(r.student_id);
+    return {
+      student_name: s ? displayName(s) : "—",
+      class: s?.class != null ? String(s.class).trim() : "",
+      day: r.day,
+      score: r.score,
+      created_at: r.created_at,
+    };
+  });
+
   return NextResponse.json({
-    leaderboard: leaderboard || [],
+    leaderboard,
     recentDays,
-    dailyError: dailyError?.message || null,
+    dailyError: null,
     syncError,
   });
 }
