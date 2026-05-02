@@ -15,7 +15,15 @@
  * - NEXT_PUBLIC_PROGRAM_PROGRESS_CUTOVER — optional ISO time; filter progress after reset
  * - NEXT_PUBLIC_PROGRAM_MAX_MISSION_DAY — optional 1–40; cohort may not open quiz/review beyond
  *   this day (e.g. set to 1 so only Day 1 is live and Days 2–40 stay locked until you raise it).
+ * - NEXT_PUBLIC_PROGRAM_SCHEDULE_MODE — "calendar" (default) uses launch date progression;
+ *   "manual" ignores the calendar until end date below — you choose the live bank each day via CLASS_MISSION_DAY.
+ * - NEXT_PUBLIC_PROGRAM_CLASS_MISSION_DAY — when schedule mode is manual (and within pilot dates),
+ *   the mission day ALL students open (1–40). Example: cohort missed Day 1 — set to 1 until they finish.
+ * - NEXT_PUBLIC_PROGRAM_MANUAL_SCHEDULE_END_DATE — YYYY-MM-DD (default 2026-06-16). Manual mode stops
+ *   after this calendar day (inclusive pilot); from the next day the calendar automation runs again unless
+ *   you keep SCHEDULE_MODE=manual and extend/adjust dates.
  */
+
 
 function parseYmd(ymd) {
   const [y, m, d] = ymd.split("-").map(Number);
@@ -74,13 +82,48 @@ export function getMaxMissionDayCap() {
   return Math.floor(n);
 }
 
+function getTotalDays() {
+  return Math.min(40, Math.max(1, Number(envStr("NEXT_PUBLIC_PROGRAM_TOTAL_DAYS", "40")) || 40));
+}
+
+/**
+ * Pilot window where SCHEDULE_MODE=manual skips calendar-based mission day and skips MAX_MISSION_DAY cap.
+ * After END_DATE (local), automation resumes from the calendar if mode stays manual (checks end).
+ */
+export function skipMaxMissionDayCap(now = new Date()) {
+  const mode = envStr("NEXT_PUBLIC_PROGRAM_SCHEDULE_MODE", "calendar").toLowerCase();
+  if (mode !== "manual") return false;
+
+  const endStr =
+    envStr("NEXT_PUBLIC_PROGRAM_MANUAL_SCHEDULE_END_DATE", "2026-06-16") || "2026-06-16";
+  const pilotEnd = parseYmd(endStr);
+  const today = startOfLocalDay(now);
+  if (!pilotEnd) return true;
+  return today <= pilotEnd;
+}
+
 /**
  * Calendar-based mission context before cohort cap is applied.
  * @returns {{ phase: 'prelaunch' | 'live' | 'ended', officialDay: number | null, useLegacyProgression: boolean }}
  */
 function getProgramMissionContextUncapped(now = new Date()) {
+  const total = getTotalDays();
+  const today = startOfLocalDay(now);
+
+  if (skipMaxMissionDayCap(now)) {
+    const md = Number(envStr("NEXT_PUBLIC_PROGRAM_CLASS_MISSION_DAY", ""));
+    if (Number.isFinite(md) && md >= 1 && md <= total) {
+      const d = Math.floor(md);
+      if (d > total) {
+        return { phase: "ended", officialDay: total, useLegacyProgression: false };
+      }
+      return { phase: "live", officialDay: d, useLegacyProgression: false };
+    }
+    // Manual pilot but missing/invalid CLASS_MISSION_DAY — keep cohort on Day 1 until configured.
+    return { phase: "live", officialDay: 1, useLegacyProgression: false };
+  }
+
   const launchYmd = envStr("NEXT_PUBLIC_PROGRAM_LAUNCH_DATE", "2026-05-01");
-  const total = Math.min(40, Math.max(1, Number(envStr("NEXT_PUBLIC_PROGRAM_TOTAL_DAYS", "40")) || 40));
   const strategy = envStr("NEXT_PUBLIC_PROGRAM_DAY_STRATEGY", "consecutive");
 
   const start = parseYmd(launchYmd);
@@ -88,7 +131,6 @@ function getProgramMissionContextUncapped(now = new Date()) {
     return { phase: "prelaunch", officialDay: null, useLegacyProgression: true };
   }
 
-  const today = startOfLocalDay(now);
   const startDay = startOfLocalDay(start);
 
   if (today < startDay) {
@@ -143,7 +185,7 @@ function getProgramMissionContextUncapped(now = new Date()) {
  */
 export function getProgramMissionContext(now = new Date()) {
   const ctx = getProgramMissionContextUncapped(now);
-  const cap = getMaxMissionDayCap();
+  const cap = skipMaxMissionDayCap(now) ? null : getMaxMissionDayCap();
   if (ctx.officialDay != null && cap != null) {
     return { ...ctx, officialDay: Math.min(ctx.officialDay, cap) };
   }

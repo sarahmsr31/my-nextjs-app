@@ -9,6 +9,7 @@ import {
   getProgramMissionContext,
   getMaxMissionDayCap,
   getProgressCutoverIso,
+  skipMaxMissionDayCap,
 } from "../../utils/programCalendar";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -108,7 +109,7 @@ function QuizContent() {
         setStudentName("Student");
       }
 
-      const missionCap = getMaxMissionDayCap();
+      const missionCap = skipMaxMissionDayCap(new Date()) ? null : getMaxMissionDayCap();
       if (missionCap != null && Number(day) > missionCap) {
         router.replace(
           `/quiz?day=${missionCap}&student_id=${encodeURIComponent(studentId)}`

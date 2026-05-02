@@ -9,6 +9,7 @@ import {
   getProgramMissionContext,
   getMaxMissionDayCap,
   getProgressCutoverIso,
+  skipMaxMissionDayCap,
 } from "../../utils/programCalendar";
 
 function DashboardLaunch({ studentName = "Navigator", onStartMission, onLogoClick }) {
@@ -249,7 +250,7 @@ function DashboardContent() {
   // Pre-launch testing: legacy next day = max(sequential, current_day). After launch: one class
   // mission per calendar day (no makeup — everyone takes the same mission as the program).
   const programCtx = getProgramMissionContext(new Date());
-  const missionCap = getMaxMissionDayCap();
+  const missionCap = skipMaxMissionDayCap(new Date()) ? null : getMaxMissionDayCap();
   const sequentialNext =
     completedDays.length > 0
       ? Math.max(...completedDays.map((d) => d.day)) + 1
@@ -289,6 +290,12 @@ function DashboardContent() {
   };
 
   const nextDay = nextQuizDay;
+
+  /** Cohort mission day already finished — open review, not quiz. */
+  const cohortMissionCompleted =
+    !programCtx.useLegacyProgression &&
+    programCtx.officialDay != null &&
+    completedDays.some((d) => d.day === programCtx.officialDay);
 
   const displayName =
     student?.preferred_name?.trim() ||
@@ -382,15 +389,21 @@ function DashboardContent() {
 
                   const goArchiveNavigate = () => {
                     if (!studentId || isLocked) return;
+                    if (isActive && isCompleted) {
+                      router.push(
+                        `/review?day=${dayNum}&student_id=${encodeURIComponent(studentId)}`
+                      );
+                      return;
+                    }
                     if (isActive) {
                       router.push(
                         `/quiz?day=${dayNum}&student_id=${encodeURIComponent(studentId)}`
                       );
-                    } else {
-                      router.push(
-                        `/review?day=${dayNum}&student_id=${encodeURIComponent(studentId)}`
-                      );
+                      return;
                     }
+                    router.push(
+                      `/review?day=${dayNum}&student_id=${encodeURIComponent(studentId)}`
+                    );
                   };
 
                   return (

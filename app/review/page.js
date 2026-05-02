@@ -4,7 +4,10 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "../../utils/supabase/client";
 import { BRANDING } from "../../utils/branding";
-import { getMaxMissionDayCap } from "../../utils/programCalendar";
+import {
+  getMaxMissionDayCap,
+  skipMaxMissionDayCap,
+} from "../../utils/programCalendar";
 
 function ReviewContent() {
   const router = useRouter();
@@ -43,7 +46,7 @@ function ReviewContent() {
         return;
       }
 
-      const missionCap = getMaxMissionDayCap();
+      const missionCap = skipMaxMissionDayCap(new Date()) ? null : getMaxMissionDayCap();
       if (missionCap != null && day > missionCap) {
         setLoading(false);
         router.replace(
