@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { BRANDING } from "../../utils/branding";
 import {
   getProgramMissionContext,
+  getMaxMissionDayCap,
   getProgressCutoverIso,
 } from "../../utils/programCalendar";
 
@@ -248,6 +249,7 @@ function DashboardContent() {
   // Pre-launch testing: legacy next day = max(sequential, current_day). After launch: one class
   // mission per calendar day (no makeup — everyone takes the same mission as the program).
   const programCtx = getProgramMissionContext(new Date());
+  const missionCap = getMaxMissionDayCap();
   const sequentialNext =
     completedDays.length > 0
       ? Math.max(...completedDays.map((d) => d.day)) + 1
@@ -258,7 +260,7 @@ function DashboardContent() {
       ? Math.min(40, Math.max(1, sequentialNext, calendarDay))
       : 1;
   const nextQuizDay = programCtx.useLegacyProgression
-    ? legacyNext
+    ? Math.min(40, legacyNext, missionCap ?? 40)
     : Math.min(40, programCtx.officialDay != null ? programCtx.officialDay : 1);
 
   useEffect(() => {

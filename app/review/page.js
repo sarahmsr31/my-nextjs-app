@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "../../utils/supabase/client";
 import { BRANDING } from "../../utils/branding";
+import { getMaxMissionDayCap } from "../../utils/programCalendar";
 
 function ReviewContent() {
   const router = useRouter();
@@ -42,6 +43,15 @@ function ReviewContent() {
         return;
       }
 
+      const missionCap = getMaxMissionDayCap();
+      if (missionCap != null && day > missionCap) {
+        setLoading(false);
+        router.replace(
+          `/dashboard?student_id=${encodeURIComponent(studentId)}&stay=1&tab=log`
+        );
+        return;
+      }
+
       setLoading(true);
       const { data: daily } = await supabase
         .from("daily_summaries")
@@ -56,7 +66,7 @@ function ReviewContent() {
       setLoading(false);
     }
     load();
-  }, [studentId, day]);
+  }, [studentId, day, router]);
 
   if (loading) return <div style={loadingStyle}>Loading mission log...</div>;
 

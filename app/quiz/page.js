@@ -7,6 +7,7 @@ import { syncAdminLeaderboard } from "../../utils/syncAdminLeaderboard";
 import { BRANDING } from "../../utils/branding";
 import {
   getProgramMissionContext,
+  getMaxMissionDayCap,
   getProgressCutoverIso,
 } from "../../utils/programCalendar";
 import { motion, AnimatePresence } from "framer-motion";
@@ -105,6 +106,14 @@ function QuizContent() {
       } else {
         console.error("Student not found or preferred_name/student_name missing:", error, student);
         setStudentName("Student");
+      }
+
+      const missionCap = getMaxMissionDayCap();
+      if (missionCap != null && Number(day) > missionCap) {
+        router.replace(
+          `/quiz?day=${missionCap}&student_id=${encodeURIComponent(studentId)}`
+        );
+        return;
       }
 
       const programCtx = getProgramMissionContext(new Date());

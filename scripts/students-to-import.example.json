@@ -1,0 +1,15 @@
+[
+  {
+    "access_code": "ASTRA001",
+    "student_name": "Example Student One",
+    "class": "Pilot",
+    "current_day": 1,
+    "preferred_name": ""
+  },
+  {
+    "access_code": "ASTRA002",
+    "student_name": "Example Student Two",
+    "class": "Pilot",
+    "current_day": 1
+  }
+]

@@ -13,6 +13,8 @@
  * - NEXT_PUBLIC_PROGRAM_DAY_STRATEGY — "consecutive" | "weekdays" (40 weekdays, May 1 = day 1)
  * - NEXT_PUBLIC_PROGRAM_TEST_MISSION_DAY — only before launch; simulates official day 1–40
  * - NEXT_PUBLIC_PROGRAM_PROGRESS_CUTOVER — optional ISO time; filter progress after reset
+ * - NEXT_PUBLIC_PROGRAM_MAX_MISSION_DAY — optional 1–40; cohort may not open quiz/review beyond
+ *   this day (e.g. set to 1 so only Day 1 is live and Days 2–40 stay locked until you raise it).
  */
 
 function parseYmd(ymd) {
@@ -63,10 +65,20 @@ function toYmdLocal(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+/** When set (1–40), mission day is capped for the whole cohort (locks higher days). */
+export function getMaxMissionDayCap() {
+  const v = envStr("NEXT_PUBLIC_PROGRAM_MAX_MISSION_DAY", "").trim();
+  if (!v) return null;
+  const n = Number(v);
+  if (!Number.isFinite(n) || n < 1 || n > 40) return null;
+  return Math.floor(n);
+}
+
 /**
+ * Calendar-based mission context before cohort cap is applied.
  * @returns {{ phase: 'prelaunch' | 'live' | 'ended', officialDay: number | null, useLegacyProgression: boolean }}
  */
-export function getProgramMissionContext(now = new Date()) {
+function getProgramMissionContextUncapped(now = new Date()) {
   const launchYmd = envStr("NEXT_PUBLIC_PROGRAM_LAUNCH_DATE", "2026-05-01");
   const total = Math.min(40, Math.max(1, Number(envStr("NEXT_PUBLIC_PROGRAM_TOTAL_DAYS", "40")) || 40));
   const strategy = envStr("NEXT_PUBLIC_PROGRAM_DAY_STRATEGY", "consecutive");
@@ -123,6 +135,19 @@ export function getProgramMissionContext(now = new Date()) {
     return { phase: "ended", officialDay: total, useLegacyProgression: false };
   }
   return { phase: "live", officialDay: dayNum, useLegacyProgression: false };
+}
+
+/**
+ * Program mission context with optional NEXT_PUBLIC_PROGRAM_MAX_MISSION_DAY cap.
+ * @returns {{ phase: 'prelaunch' | 'live' | 'ended', officialDay: number | null, useLegacyProgression: boolean }}
+ */
+export function getProgramMissionContext(now = new Date()) {
+  const ctx = getProgramMissionContextUncapped(now);
+  const cap = getMaxMissionDayCap();
+  if (ctx.officialDay != null && cap != null) {
+    return { ...ctx, officialDay: Math.min(ctx.officialDay, cap) };
+  }
+  return ctx;
 }
 
 /** Optional Supabase filter: only count progress at/after this instant (May 1 reset). */

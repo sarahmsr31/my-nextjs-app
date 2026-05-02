@@ -5,6 +5,9 @@
 .env*.local
 .env
 
+# Local roster (copy from students-to-import.example.json)
+/scripts/students-to-import.json
+
 # Next.js
 /.next/
 /out/
