@@ -7,6 +7,7 @@ import { BRANDING } from "../../utils/branding";
 import {
   getMaxMissionDayCap,
   skipMaxMissionDayCap,
+  getManualMissionCatchUpRange,
 } from "../../utils/programCalendar";
 
 function ReviewContent() {
@@ -46,8 +47,28 @@ function ReviewContent() {
         return;
       }
 
-      const missionCap = skipMaxMissionDayCap(new Date()) ? null : getMaxMissionDayCap();
+      let missionCap = skipMaxMissionDayCap(new Date()) ? null : getMaxMissionDayCap();
+      let catchUpRange = getManualMissionCatchUpRange(new Date());
+      try {
+        const schRes = await fetch("/api/program-schedule", { cache: "no-store" });
+        if (schRes.ok) {
+          const sch = await schRes.json();
+          if (sch.missionCap !== undefined) missionCap = sch.missionCap;
+          if (sch.catchUpRange !== undefined) catchUpRange = sch.catchUpRange;
+        }
+      } catch {
+        /* client calendar */
+      }
+
       if (missionCap != null && day > missionCap) {
+        setLoading(false);
+        router.replace(
+          `/dashboard?student_id=${encodeURIComponent(studentId)}&stay=1&tab=log`
+        );
+        return;
+      }
+
+      if (catchUpRange != null && day > catchUpRange.max) {
         setLoading(false);
         router.replace(
           `/dashboard?student_id=${encodeURIComponent(studentId)}&stay=1&tab=log`

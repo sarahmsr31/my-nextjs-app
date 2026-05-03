@@ -10,6 +10,8 @@ import {
   getMaxMissionDayCap,
   getProgressCutoverIso,
   skipMaxMissionDayCap,
+  getManualMissionCatchUpRange,
+  getFirstIncompleteInRange,
 } from "../../utils/programCalendar";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -109,7 +111,21 @@ function QuizContent() {
         setStudentName("Student");
       }
 
-      const missionCap = skipMaxMissionDayCap(new Date()) ? null : getMaxMissionDayCap();
+      let missionCap = skipMaxMissionDayCap(new Date()) ? null : getMaxMissionDayCap();
+      let programCtx = getProgramMissionContext(new Date());
+      let catchUpRange = getManualMissionCatchUpRange(new Date());
+      try {
+        const schRes = await fetch("/api/program-schedule", { cache: "no-store" });
+        if (schRes.ok) {
+          const sch = await schRes.json();
+          if (sch.missionCap !== undefined) missionCap = sch.missionCap;
+          if (sch.programCtx) programCtx = sch.programCtx;
+          if (sch.catchUpRange !== undefined) catchUpRange = sch.catchUpRange;
+        }
+      } catch {
+        /* keep client-side calendar */
+      }
+
       if (missionCap != null && Number(day) > missionCap) {
         router.replace(
           `/quiz?day=${missionCap}&student_id=${encodeURIComponent(studentId)}`
@@ -117,12 +133,38 @@ function QuizContent() {
         return;
       }
 
-      const programCtx = getProgramMissionContext(new Date());
+      const dayNum = Number(day);
+
       if (
+        catchUpRange &&
+        !programCtx.useLegacyProgression &&
+        programCtx.phase === "live"
+      ) {
+        if (
+          dayNum < catchUpRange.min ||
+          dayNum > catchUpRange.max
+        ) {
+          const cutIso = getProgressCutoverIso();
+          let sumQ = supabase
+            .from("daily_summaries")
+            .select("day")
+            .eq("student_id", studentId)
+            .eq("is_completed", true);
+          if (cutIso) sumQ = sumQ.gte("created_at", cutIso);
+          const { data: sums } = await sumQ;
+          const nums = (sums || []).map((r) => Number(r.day));
+          const target =
+            getFirstIncompleteInRange(nums, catchUpRange) ?? catchUpRange.min;
+          router.replace(
+            `/quiz?day=${target}&student_id=${encodeURIComponent(studentId)}`
+          );
+          return;
+        }
+      } else if (
         !programCtx.useLegacyProgression &&
         programCtx.phase === "live" &&
         programCtx.officialDay != null &&
-        Number(day) !== programCtx.officialDay
+        dayNum !== programCtx.officialDay
       ) {
         router.replace(
           `/quiz?day=${programCtx.officialDay}&student_id=${encodeURIComponent(studentId)}`

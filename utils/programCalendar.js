@@ -22,6 +22,9 @@
  * - NEXT_PUBLIC_PROGRAM_MANUAL_SCHEDULE_END_DATE — YYYY-MM-DD (default 2026-06-16). Manual mode stops
  *   after this calendar day (inclusive pilot); from the next day the calendar automation runs again unless
  *   you keep SCHEDULE_MODE=manual and extend/adjust dates.
+ * - NEXT_PUBLIC_PROGRAM_OPEN_MISSION_MAX — optional 1–40. If set, unlocks missions 1 through this number for the
+ *   live cohort (does not require SCHEDULE_MODE=manual). If omitted during manual pilot, days 1 through
+ *   CLASS_MISSION_DAY unlock implicitly (see getManualMissionCatchUpRange).
  */
 
 
@@ -100,6 +103,70 @@ export function skipMaxMissionDayCap(now = new Date()) {
   const today = startOfLocalDay(now);
   if (!pilotEnd) return true;
   return today <= pilotEnd;
+}
+
+/**
+ * Catch-up window: missions from day 1 through an upper bound.
+ * - If NEXT_PUBLIC_PROGRAM_OPEN_MISSION_MAX is set (1–total): max is that value (live cohort only).
+ * - Else: max is the cohort {@link getProgramMissionContext} official day (days 1..officialDay unlock).
+ *   So when the class is on Day 2+, Day 1 stays reachable without relying on manual mode or missing env on Vercel.
+ * @returns {{ min: number, max: number } | null}
+ */
+export function getManualMissionCatchUpRange(now = new Date()) {
+  const total = getTotalDays();
+  const raw = envStr("NEXT_PUBLIC_PROGRAM_OPEN_MISSION_MAX", "").trim();
+
+  if (raw) {
+    const n = Number(raw);
+    if (Number.isFinite(n) && n >= 1 && n <= total) {
+      const ctx = getProgramMissionContext(now);
+      if (ctx.phase === "live" && !ctx.useLegacyProgression) {
+        return { min: 1, max: Math.floor(n) };
+      }
+    }
+  }
+
+  const ctx = getProgramMissionContext(now);
+  if (ctx.phase !== "live" || ctx.useLegacyProgression || ctx.officialDay == null) {
+    return null;
+  }
+  const max = Math.min(total, Math.max(1, Math.floor(ctx.officialDay)));
+  return { min: 1, max };
+}
+
+/**
+ * First incomplete day inside an explicit range (from server props or {@link getManualMissionCatchUpRange}).
+ */
+export function getFirstIncompleteInRange(completedDayNumbers, range) {
+  if (!range) return null;
+  const done = new Set((completedDayNumbers || []).map(Number));
+  for (let d = range.min; d <= range.max; d++) {
+    if (!done.has(d)) return d;
+  }
+  return null;
+}
+
+/** True when every day in `range` appears in completedDayNumbers. */
+export function allCompleteInRange(completedDayNumbers, range) {
+  if (!range) return false;
+  const done = new Set((completedDayNumbers || []).map(Number));
+  for (let d = range.min; d <= range.max; d++) {
+    if (!done.has(d)) return false;
+  }
+  return true;
+}
+
+/**
+ * Lowest-numbered incomplete mission inside the catch-up range, or null if none / range inactive.
+ * @param {number[]} completedDayNumbers — mission days already completed (e.g. from dashboard aggregation).
+ */
+export function getFirstIncompleteInCatchUpRange(completedDayNumbers, now = new Date()) {
+  return getFirstIncompleteInRange(completedDayNumbers, getManualMissionCatchUpRange(now));
+}
+
+/** True when every mission day in the catch-up window has a completion recorded. */
+export function allCatchUpMissionsComplete(completedDayNumbers, now = new Date()) {
+  return allCompleteInRange(completedDayNumbers, getManualMissionCatchUpRange(now));
 }
 
 /**
