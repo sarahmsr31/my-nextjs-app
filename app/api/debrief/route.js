@@ -4,26 +4,31 @@ import {
   getGeminiApiKey,
   generateTextWithFallback,
   DEBRIEF_SAFETY_SETTINGS,
+  isGeminiAuthOrConfigError,
 } from "../../../utils/geminiModel";
-
-const JSON_DEBRIEF_CONFIG = {
-  responseMimeType: "application/json",
-};
 
 function parseStructuredDebrief(raw) {
   const trimmed = (raw || "").trim();
   if (!trimmed) return null;
-  try {
-    return JSON.parse(trimmed);
-  } catch {
-    const fence = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
-    if (fence) {
-      try {
-        return JSON.parse(fence[1].trim());
-      } catch {
-        /* fall through */
-      }
+  const tryParse = (s) => {
+    try {
+      return JSON.parse(s);
+    } catch {
+      return null;
     }
+  };
+  let parsed = tryParse(trimmed);
+  if (parsed && typeof parsed === "object") return parsed;
+  const fence = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fence) {
+    parsed = tryParse(fence[1].trim());
+    if (parsed && typeof parsed === "object") return parsed;
+  }
+  const start = trimmed.indexOf("{");
+  const end = trimmed.lastIndexOf("}");
+  if (start !== -1 && end > start) {
+    parsed = tryParse(trimmed.slice(start, end + 1));
+    if (parsed && typeof parsed === "object") return parsed;
   }
   return null;
 }
@@ -104,17 +109,12 @@ Use 4th-grade English. Keep it positive. Arrays must each have 2 strings.
 `;
     }
 
-    let text;
-    try {
-      text = await generateTextWithFallback(genAI, prompt, {
-        safetySettings: DEBRIEF_SAFETY_SETTINGS,
-        generationConfig: JSON_DEBRIEF_CONFIG,
-      });
-    } catch {
-      text = await generateTextWithFallback(genAI, prompt, {
-        safetySettings: DEBRIEF_SAFETY_SETTINGS,
-      });
-    }
+    // Plain text generation only: `responseMimeType: "application/json"` has
+    // produced empty `response.text()` on some Vercel + SDK combos; we still
+    // ask the model for JSON and parse it below.
+    const text = await generateTextWithFallback(genAI, prompt, {
+      safetySettings: DEBRIEF_SAFETY_SETTINGS,
+    });
 
     if (!text) {
       return NextResponse.json({
@@ -137,14 +137,18 @@ Use 4th-grade English. Keep it positive. Arrays must each have 2 strings.
 
     return NextResponse.json(payload);
   } catch (error) {
-    console.error("[api/debrief]", error?.message || error);
+    const raw = String(error?.message || error || "unknown_error");
+    console.error("[api/debrief]", raw);
+    const authHint = isGeminiAuthOrConfigError(error)
+      ? "Gemini auth/config (common: API key restricted to HTTP referrers—use an unrestricted server key in Vercel, or enable Generative Language API for the key project)."
+      : raw.slice(0, 400);
     return NextResponse.json(
       {
         feedback:
           "We couldn't reach Mission Control for a personalized debrief right now. Your score is saved—excellent work finishing this mission.",
         strengths: [],
         focus_areas: [],
-        error: error?.message || "unknown_error",
+        error: authHint,
       },
       { status: 200 }
     );

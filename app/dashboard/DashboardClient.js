@@ -344,6 +344,7 @@ function DashboardContent({
 
   const nextDay = nextQuizDay;
 
+  const minArchiveDayBase = catchUpRange ? catchUpRange.min : 1;
   const maxArchiveDayBase = catchUpRange ? catchUpRange.max : nextQuizDay;
   const effectiveMaxArchiveDay =
     missionCap != null
@@ -464,7 +465,11 @@ function DashboardContent({
                   const isCompleted = !!missionData;
                   const isActive =
                     readyDay != null && dayNum === readyDay;
-                  const isLocked = dayNum > effectiveMaxArchiveDay;
+                  const belowOpenWindow =
+                    catchUpRange != null && dayNum < minArchiveDayBase;
+                  const isLocked =
+                    dayNum > effectiveMaxArchiveDay ||
+                    (belowOpenWindow && !isCompleted);
                   const isSkipped =
                     catchUpRange != null
                       ? false
@@ -495,8 +500,9 @@ function DashboardContent({
                       );
                       return;
                     }
+                    // Incomplete day: open the mission. Quiz page enforces official day / caps.
                     router.push(
-                      `/review?day=${dayNum}&student_id=${encodeURIComponent(studentId)}`
+                      `/quiz?day=${dayNum}&student_id=${encodeURIComponent(studentId)}`
                     );
                   };
 
@@ -543,7 +549,7 @@ function DashboardContent({
                         </div>
                       ) : (
                         <div style={{ fontSize: "10px", color: isLocked ? "#4B5563" : isSkipped ? "#6B7280" : "#94A3B8", fontWeight: isSkipped ? 600 : undefined }}>
-                          {isLocked ? "LOCKED" : isSkipped ? "VIEW LOG" : "READY"}
+                          {isLocked ? "LOCKED" : isSkipped ? "OPEN" : "READY"}
                         </div>
                       )}
                     </div>

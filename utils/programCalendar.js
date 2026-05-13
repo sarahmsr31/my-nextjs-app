@@ -22,9 +22,9 @@
  * - NEXT_PUBLIC_PROGRAM_MANUAL_SCHEDULE_END_DATE — YYYY-MM-DD (default 2026-06-16). Manual mode stops
  *   after this calendar day (inclusive pilot); from the next day the calendar automation runs again unless
  *   you keep SCHEDULE_MODE=manual and extend/adjust dates.
- * - NEXT_PUBLIC_PROGRAM_OPEN_MISSION_MAX — optional 1–40. If set, unlocks missions 1 through this number for the
- *   live cohort (does not require SCHEDULE_MODE=manual). If omitted during manual pilot, days 1 through
- *   CLASS_MISSION_DAY unlock implicitly (see getManualMissionCatchUpRange).
+ * - NEXT_PUBLIC_PROGRAM_OPEN_MISSION_MAX — optional 1–40; upper end of the unlock window (live cohort).
+ * - NEXT_PUBLIC_PROGRAM_OPEN_MISSION_MIN — optional 1–40; lower end (default 1 if MIN unset). Set MIN=3 and MAX=3
+ *   (or MIN=3 with MAX unset so max follows CLASS_MISSION_DAY / official day) to close Days 1–2 and open only Day 3+.
  */
 
 
@@ -106,24 +106,40 @@ export function skipMaxMissionDayCap(now = new Date()) {
 }
 
 /**
- * Catch-up window: missions from day 1 through an upper bound.
- * - If NEXT_PUBLIC_PROGRAM_OPEN_MISSION_MAX is set (1–total): max is that value (live cohort only).
- * - Else: max is the cohort {@link getProgramMissionContext} official day (days 1..officialDay unlock).
- *   So when the class is on Day 2+, Day 1 stays reachable without relying on manual mode or missing env on Vercel.
+ * Unlock window `[min,max]` inclusive for quizzes/reviews (Flight Archive).
+ * - If OPEN_MISSION_MAX and/or OPEN_MISSION_MIN set: explicit window (live cohort only). Missing MAX uses officialDay.
+ * - Else: `{ 1 … officialDay }` for calendar-style catch-up through the current program day.
  * @returns {{ min: number, max: number } | null}
  */
 export function getManualMissionCatchUpRange(now = new Date()) {
   const total = getTotalDays();
-  const raw = envStr("NEXT_PUBLIC_PROGRAM_OPEN_MISSION_MAX", "").trim();
+  const rawMax = envStr("NEXT_PUBLIC_PROGRAM_OPEN_MISSION_MAX", "").trim();
+  const rawMin = envStr("NEXT_PUBLIC_PROGRAM_OPEN_MISSION_MIN", "").trim();
 
-  if (raw) {
-    const n = Number(raw);
-    if (Number.isFinite(n) && n >= 1 && n <= total) {
-      const ctx = getProgramMissionContext(now);
-      if (ctx.phase === "live" && !ctx.useLegacyProgression) {
-        return { min: 1, max: Math.floor(n) };
-      }
+  if (rawMax || rawMin) {
+    const ctx = getProgramMissionContext(now);
+    if (ctx.phase !== "live" || ctx.useLegacyProgression) return null;
+
+    let minN = 1;
+    if (rawMin) {
+      const m = Number(rawMin);
+      if (!Number.isFinite(m) || m < 1 || m > total) return null;
+      minN = Math.floor(m);
     }
+
+    let maxN;
+    if (rawMax) {
+      const x = Number(rawMax);
+      if (!Number.isFinite(x) || x < 1 || x > total) return null;
+      maxN = Math.floor(x);
+    } else if (ctx.officialDay != null) {
+      maxN = Math.min(total, Math.max(1, Math.floor(ctx.officialDay)));
+    } else {
+      maxN = minN;
+    }
+
+    if (maxN < minN) maxN = minN;
+    return { min: minN, max: maxN };
   }
 
   const ctx = getProgramMissionContext(now);

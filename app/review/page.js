@@ -76,6 +76,23 @@ function ReviewContent() {
         return;
       }
 
+      if (catchUpRange != null && day < catchUpRange.min) {
+        const { data: wasDone } = await supabase
+          .from("daily_summaries")
+          .select("id")
+          .eq("student_id", studentId)
+          .eq("day", day)
+          .eq("is_completed", true)
+          .maybeSingle();
+        if (!wasDone) {
+          setLoading(false);
+          router.replace(
+            `/dashboard?student_id=${encodeURIComponent(studentId)}&stay=1&tab=log`
+          );
+          return;
+        }
+      }
+
       setLoading(true);
       const { data: daily } = await supabase
         .from("daily_summaries")

@@ -80,10 +80,13 @@ function QuizContent() {
     [studentId, day]
   );
 
-  // HELPER: Personalization Engine
+  // HELPER: Personalization Engine (DB copy may use {{name}} or {{student_name}})
   const personalize = (text) => {
     if (!text) return "";
-    return text.replace(/{{name}}/g, studentName);
+    const name = studentName || "Student";
+    return String(text)
+      .replace(/\{\{student_name\}\}/gi, name)
+      .replace(/\{\{name\}\}/gi, name);
   };
 
   useEffect(() => {
@@ -172,39 +175,50 @@ function QuizContent() {
         return;
       }
 
-      // Prevent replaying a day that is already marked complete.
-      const { data: finished } = await supabase
+      // Prevent replaying a day that is already marked complete (same cutover as dashboard).
+      const cutIso = getProgressCutoverIso();
+      const dayNn = Number(day);
+      let finishedQ = supabase
         .from("daily_summaries")
         .select("id")
         .eq("student_id", studentId)
-        .eq("day", Number(day))
-        .eq("is_completed", true)
-        .maybeSingle();
-      if (finished) {
-        router.replace(
-          `/review?day=${Number(day)}&student_id=${encodeURIComponent(studentId)}`
-        );
-        return;
-      }
+        .eq("day", dayNn)
+        .eq("is_completed", true);
+      if (cutIso) finishedQ = finishedQ.gte("created_at", cutIso);
 
-      // Fallback guard: if summary row is missing but all questions for this day were
-      // already answered in responses, route to review instead of allowing a reattempt.
-      const cutIso = getProgressCutoverIso();
       let answeredQ = supabase
         .from("responses")
         .select("question_number")
         .eq("student_id", studentId)
-        .eq("day_number", Number(day));
+        .eq("day_number", dayNn);
       if (cutIso) answeredQ = answeredQ.gte("created_at", cutIso);
-      const { data: answeredRows } = await answeredQ;
+
+      const questionsCountQ = supabase
+        .from("questions")
+        .select("id", { count: "exact", head: true })
+        .eq("day_number", dayNn);
+
+      const [{ data: finished }, { count: qCount }, { data: answeredRows }] =
+        await Promise.all([finishedQ.maybeSingle(), questionsCountQ, answeredQ]);
+
+      if (finished) {
+        router.replace(
+          `/review?day=${dayNn}&student_id=${encodeURIComponent(studentId)}`
+        );
+        return;
+      }
+
+      // If every question for this day has a response (post-cutover), treat as done.
+      const questionsForDay =
+        typeof qCount === "number" && qCount > 0 ? qCount : 10;
       const uniqueAnswered = new Set(
         (answeredRows || [])
           .map((r) => Number(r.question_number))
           .filter((n) => Number.isFinite(n))
       ).size;
-      if (uniqueAnswered >= 10) {
+      if (uniqueAnswered >= questionsForDay) {
         router.replace(
-          `/review?day=${Number(day)}&student_id=${encodeURIComponent(studentId)}`
+          `/review?day=${dayNn}&student_id=${encodeURIComponent(studentId)}`
         );
         return;
       }
@@ -228,6 +242,9 @@ function QuizContent() {
             })
           });
           const data = await res.json().catch(() => ({}));
+          if (data?.error) {
+            console.warn("[debrief recap API]", data.error);
+          }
           const recapText =
             typeof data?.feedback === "string" && data.feedback.trim()
               ? data.feedback.trim()
@@ -290,6 +307,9 @@ function QuizContent() {
               }),
             });
             const data = await res.json().catch(() => ({}));
+            if (data?.error) {
+              console.warn("[debrief API]", data.error);
+            }
             const aiData = {
               feedback:
                 typeof data?.feedback === "string" ? data.feedback.trim() : "",
@@ -523,7 +543,7 @@ function QuizContent() {
               {/* DAY RECAP (Gemini's feedback from Day 2 onwards) */}
               {dayRecap && (
                 <div style={recapBoxStyle}>
-                  <p style={{ fontSize: "14px", lineHeight: "1.5" }}>{dayRecap}</p>
+                  <p style={{ fontSize: "14px", lineHeight: "1.5" }}>{personalize(dayRecap)}</p>
                 </div>
               )}
 
