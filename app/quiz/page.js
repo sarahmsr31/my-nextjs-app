@@ -15,6 +15,8 @@ import {
 } from "../../utils/programCalendar";
 import { motion, AnimatePresence } from "framer-motion";
 
+const BACKFILL_SUMMARY_PREFIX = "Mission summary backfilled from recorded responses.";
+
 function QuizContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -183,7 +185,7 @@ function QuizContent() {
       const dayNn = Number(day);
       let finishedQ = supabase
         .from("daily_summaries")
-        .select("id")
+        .select("id, parent_summary")
         .eq("student_id", studentId)
         .eq("day", dayNn)
         .eq("is_completed", true);
@@ -204,7 +206,11 @@ function QuizContent() {
       const [{ data: finished }, { count: qCount }, { data: answeredRows }] =
         await Promise.all([finishedQ.maybeSingle(), questionsCountQ, answeredQ]);
 
-      if (finished) {
+      const isBackfilledCompletion =
+        typeof finished?.parent_summary === "string" &&
+        finished.parent_summary.startsWith(BACKFILL_SUMMARY_PREFIX);
+
+      if (finished && !isBackfilledCompletion) {
         router.replace(
           `/review?day=${dayNn}&student_id=${encodeURIComponent(studentId)}`
         );
@@ -219,7 +225,7 @@ function QuizContent() {
           .map((r) => Number(r.question_number))
           .filter((n) => Number.isFinite(n))
       ).size;
-      if (uniqueAnswered >= questionsForDay) {
+      if (!isBackfilledCompletion && uniqueAnswered >= questionsForDay) {
         router.replace(
           `/review?day=${dayNn}&student_id=${encodeURIComponent(studentId)}`
         );

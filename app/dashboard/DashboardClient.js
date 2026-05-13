@@ -15,6 +15,8 @@ import {
   allCompleteInRange,
 } from "../../utils/programCalendar";
 
+const BACKFILL_SUMMARY_PREFIX = "Mission summary backfilled from recorded responses.";
+
 function DashboardLaunch({ studentName = "Navigator", onStartMission, onLogoClick }) {
   const dashboardContainer = {
     padding: "40px 20px",
@@ -205,7 +207,7 @@ function DashboardContent({
       const cut = getProgressCutoverIso();
       let dsQuery = supabase
         .from("daily_summaries")
-        .select("day, score, correct_count, total_questions")
+        .select("day, score, correct_count, total_questions, parent_summary")
         .eq("student_id", studentId)
         .eq("is_completed", true);
       if (cut) dsQuery = dsQuery.gte("created_at", cut);
@@ -221,9 +223,17 @@ function DashboardContent({
       ]);
 
       const byDay = new Map();
+      const backfilledDays = new Set();
       for (const row of completedSummaries || []) {
         const dayNum = Number(row.day);
         if (!Number.isFinite(dayNum) || dayNum < 1) continue;
+        const isBackfilled =
+          typeof row.parent_summary === "string" &&
+          row.parent_summary.startsWith(BACKFILL_SUMMARY_PREFIX);
+        if (isBackfilled) {
+          backfilledDays.add(dayNum);
+          continue;
+        }
         byDay.set(dayNum, {
           day: dayNum,
           total: Number(row.total_questions) || 10,
@@ -249,7 +259,7 @@ function DashboardContent({
       }
 
       for (const [dayNum, agg] of responsesByDay.entries()) {
-        if (byDay.has(dayNum)) continue;
+        if (byDay.has(dayNum) || backfilledDays.has(dayNum)) continue;
         const total = agg.uniqueQuestions.size;
         if (total >= 10) {
           byDay.set(dayNum, {

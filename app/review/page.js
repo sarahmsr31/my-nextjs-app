@@ -10,6 +10,8 @@ import {
   getManualMissionCatchUpRange,
 } from "../../utils/programCalendar";
 
+const BACKFILL_SUMMARY_PREFIX = "Mission summary backfilled from recorded responses.";
+
 function ReviewContent() {
   const router = useRouter();
   const params = useSearchParams();
@@ -100,6 +102,17 @@ function ReviewContent() {
         .eq("student_id", studentId)
         .eq("day", day)
         .maybeSingle();
+
+      const isBackfilledSummary =
+        typeof daily?.parent_summary === "string" &&
+        daily.parent_summary.startsWith(BACKFILL_SUMMARY_PREFIX);
+      if (isBackfilledSummary) {
+        setLoading(false);
+        router.replace(
+          `/quiz?day=${day}&student_id=${encodeURIComponent(studentId)}`
+        );
+        return;
+      }
 
       setSummary(daily || null);
       setReactionThumbs(Boolean(daily?.thumbs_up));

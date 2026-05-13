@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "import-students": "node scripts/import-students.mjs"
+    "import-students": "node scripts/import-students.mjs",
+    "backfill-daily-summaries": "node scripts/backfill-daily-summaries.mjs"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
