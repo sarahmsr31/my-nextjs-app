@@ -351,7 +351,7 @@ function QuizContent() {
           const dailySummaryRow = {
             student_id: studentId,
             day: currentDay,
-            score: (correctAnswers / totalQuestions) * 100,
+            score: Math.round((correctAnswers / totalQuestions) * 100),
             correct_count: correctAnswers,
             total_questions: totalQuestions,
             parent_summary: aiFeedbackText,
