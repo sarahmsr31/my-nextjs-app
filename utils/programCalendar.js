@@ -23,8 +23,8 @@
  *   after this calendar day (inclusive pilot); from the next day the calendar automation runs again unless
  *   you keep SCHEDULE_MODE=manual and extend/adjust dates.
  * - NEXT_PUBLIC_PROGRAM_OPEN_MISSION_MAX — optional 1–40; upper end of the unlock window (live cohort).
- * - NEXT_PUBLIC_PROGRAM_OPEN_MISSION_MIN — optional 1–40; lower end (default 1 if MIN unset). Set MIN=3 and MAX=3
- *   (or MIN=3 with MAX unset so max follows CLASS_MISSION_DAY / official day) to close Days 1–2 and open only Day 3+.
+ * - NEXT_PUBLIC_PROGRAM_OPEN_MISSION_MIN — optional; if set with MAX, only MAX is used for the upper
+ *   window; the lower bound for learners is always Day 1 so incomplete missions stay open for catch-up.
  */
 
 
@@ -107,8 +107,9 @@ export function skipMaxMissionDayCap(now = new Date()) {
 
 /**
  * Unlock window `[min,max]` inclusive for quizzes/reviews (Flight Archive).
- * - If OPEN_MISSION_MAX and/or OPEN_MISSION_MIN set: explicit window (live cohort only). Missing MAX uses officialDay.
- * - Else: `{ 1 … officialDay }` for calendar-style catch-up through the current program day.
+ * - `min` is always **1** so incomplete earlier missions stay available for catch-up.
+ * - If OPEN_MISSION_MAX and/or OPEN_MISSION_MIN set: still `min: 1`; `max` from MAX or official day (MIN does not lock earlier days).
+ * - Else (live calendar): `{ 1 … officialDay }`.
  * @returns {{ min: number, max: number } | null}
  */
 export function getManualMissionCatchUpRange(now = new Date()) {
@@ -120,12 +121,7 @@ export function getManualMissionCatchUpRange(now = new Date()) {
     const ctx = getProgramMissionContext(now);
     if (ctx.phase !== "live" || ctx.useLegacyProgression) return null;
 
-    let minN = 1;
-    if (rawMin) {
-      const m = Number(rawMin);
-      if (!Number.isFinite(m) || m < 1 || m > total) return null;
-      minN = Math.floor(m);
-    }
+    const minN = 1;
 
     let maxN;
     if (rawMax) {
@@ -135,7 +131,7 @@ export function getManualMissionCatchUpRange(now = new Date()) {
     } else if (ctx.officialDay != null) {
       maxN = Math.min(total, Math.max(1, Math.floor(ctx.officialDay)));
     } else {
-      maxN = minN;
+      maxN = total;
     }
 
     if (maxN < minN) maxN = minN;

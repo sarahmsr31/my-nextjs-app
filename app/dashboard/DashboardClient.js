@@ -344,12 +344,18 @@ function DashboardContent({
 
   const nextDay = nextQuizDay;
 
-  const minArchiveDayBase = catchUpRange ? catchUpRange.min : 1;
-  const maxArchiveDayBase = catchUpRange ? catchUpRange.max : nextQuizDay;
-  const effectiveMaxArchiveDay =
-    missionCap != null
-      ? Math.min(maxArchiveDayBase, missionCap)
-      : maxArchiveDayBase;
+  /** Highest mission day learners can open in the archive (catch-up through program day; legacy = full cap). */
+  const cap40 = Math.min(40, missionCap ?? 40);
+  let archiveOpenMax;
+  if (programCtx.useLegacyProgression) {
+    archiveOpenMax = cap40;
+  } else if (catchUpRange) {
+    archiveOpenMax = Math.min(cap40, catchUpRange.max);
+  } else if (programCtx.phase === "live" && programCtx.officialDay != null) {
+    archiveOpenMax = Math.min(cap40, programCtx.officialDay);
+  } else {
+    archiveOpenMax = Math.min(cap40, Math.max(1, nextQuizDay));
+  }
 
   const readyDay =
     firstIncompleteCatchUp != null
@@ -465,15 +471,7 @@ function DashboardContent({
                   const isCompleted = !!missionData;
                   const isActive =
                     readyDay != null && dayNum === readyDay;
-                  const belowOpenWindow =
-                    catchUpRange != null && dayNum < minArchiveDayBase;
-                  const isLocked =
-                    dayNum > effectiveMaxArchiveDay ||
-                    (belowOpenWindow && !isCompleted);
-                  const isSkipped =
-                    catchUpRange != null
-                      ? false
-                      : !isCompleted && dayNum < nextQuizDay;
+                  const isLocked = dayNum > archiveOpenMax;
                   const archiveClickable = !!studentId && !isLocked;
 
                   const goArchiveNavigate = () => {
@@ -484,23 +482,6 @@ function DashboardContent({
                       );
                       return;
                     }
-                    if (
-                      catchUpRange &&
-                      dayNum >= catchUpRange.min &&
-                      dayNum <= catchUpRange.max
-                    ) {
-                      router.push(
-                        `/quiz?day=${dayNum}&student_id=${encodeURIComponent(studentId)}`
-                      );
-                      return;
-                    }
-                    if (isActive) {
-                      router.push(
-                        `/quiz?day=${dayNum}&student_id=${encodeURIComponent(studentId)}`
-                      );
-                      return;
-                    }
-                    // Incomplete day: open the mission. Quiz page enforces official day / caps.
                     router.push(
                       `/quiz?day=${dayNum}&student_id=${encodeURIComponent(studentId)}`
                     );
@@ -521,15 +502,15 @@ function DashboardContent({
                       }}
                       style={{
                         ...logCardStyle,
-                        opacity: isLocked || isSkipped ? 0.45 : 1,
-                        filter: isLocked ? "grayscale(100%)" : isSkipped ? "grayscale(55%)" : "none",
-                        border: isCompleted ? "1px solid #10b981" : isActive ? "1px solid #FF6A1A" : isSkipped ? "1px solid #4B5563" : "1px solid #333",
+                        opacity: isLocked ? 0.45 : 1,
+                        filter: isLocked ? "grayscale(100%)" : "none",
+                        border: isCompleted ? "1px solid #10b981" : isActive ? "1px solid #FF6A1A" : "1px solid #333",
                         cursor: archiveClickable ? "pointer" : "default",
                       }}
                     >
-                      <span style={{ color: isLocked || isSkipped ? "#6B7280" : "#FF6A1A", fontWeight: "bold", fontSize: "11px" }}>DAY {dayNum}</span>
+                      <span style={{ color: isLocked ? "#6B7280" : "#FF6A1A", fontWeight: "bold", fontSize: "11px" }}>DAY {dayNum}</span>
                       <div style={{ margin: "12px 0", fontSize: "20px" }}>
-                        {isCompleted ? "✅" : isLocked ? "🔒" : isSkipped ? "—" : "🚀"}
+                        {isCompleted ? "✅" : isLocked ? "🔒" : isActive ? "🚀" : "🚀"}
                       </div>
 
                       {isCompleted ? (
@@ -548,8 +529,8 @@ function DashboardContent({
                           </button>
                         </div>
                       ) : (
-                        <div style={{ fontSize: "10px", color: isLocked ? "#4B5563" : isSkipped ? "#6B7280" : "#94A3B8", fontWeight: isSkipped ? 600 : undefined }}>
-                          {isLocked ? "LOCKED" : isSkipped ? "OPEN" : "READY"}
+                        <div style={{ fontSize: "10px", color: isLocked ? "#4B5563" : "#94A3B8", fontWeight: !isCompleted && !isLocked && !isActive ? 600 : undefined }}>
+                          {isLocked ? "LOCKED" : isActive ? "READY" : isCompleted ? "" : "CATCH UP"}
                         </div>
                       )}
                     </div>

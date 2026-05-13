@@ -166,13 +166,16 @@ function QuizContent() {
       } else if (
         !programCtx.useLegacyProgression &&
         programCtx.phase === "live" &&
-        programCtx.officialDay != null &&
-        dayNum !== programCtx.officialDay
+        programCtx.officialDay != null
       ) {
-        router.replace(
-          `/quiz?day=${programCtx.officialDay}&student_id=${encodeURIComponent(studentId)}`
-        );
-        return;
+        const cap = missionCap ?? 40;
+        const upper = Math.min(cap, programCtx.officialDay);
+        if (dayNum < 1 || dayNum > upper) {
+          router.replace(
+            `/quiz?day=${upper}&student_id=${encodeURIComponent(studentId)}`
+          );
+          return;
+        }
       }
 
       // Prevent replaying a day that is already marked complete (same cutover as dashboard).
