@@ -299,6 +299,15 @@ function QuizContent() {
               : 0
           );
 
+          const currentDay = Number(day);
+          const totalQuestions = finalResponses.length;
+          const correctAnswers = correctCount;
+
+          // Save mission completion even if Gemini is unavailable.
+          let aiFeedbackText = "Great work completing this mission. Your results are saved.";
+          let aiStrengthsArray = [];
+          let aiFocusArray = [];
+
           try {
             const res = await fetch("/api/debrief", {
               method: "POST",
@@ -319,62 +328,59 @@ function QuizContent() {
               strengths: Array.isArray(data?.strengths) ? data.strengths : [],
               focus_areas: Array.isArray(data?.focus_areas) ? data.focus_areas : [],
             };
-            const text =
+            aiFeedbackText =
               aiData.feedback ||
               (typeof data?.error === "string"
                 ? `Briefing unavailable: ${data.error}`
-                : "Great work completing this mission. Your results are saved.");
-
-            const aiStrengthsArray = aiData.strengths.length ? aiData.strengths : [];
-            const aiFocusArray = aiData.focus_areas.length ? aiData.focus_areas : [];
-            const currentDay = Number(day);
-            const totalQuestions = finalResponses.length;
-            const correctAnswers = correctCount;
-            const aiFeedbackText = text;
-
-            /** Matches daily_summaries shape: Gemini debrief + session stats. */
-            const dailySummaryRow = {
-              student_id: studentId,
-              day: currentDay,
-              score: (correctAnswers / totalQuestions) * 100,
-              correct_count: correctAnswers,
-              total_questions: totalQuestions,
-              parent_summary: aiFeedbackText,
-              strengths: aiStrengthsArray,
-              focus_areas: aiFocusArray,
-              recommended_micro_lessons: null,
-              is_completed: true,
-            };
-
-            let summaryError = null;
-            const apiRes = await fetch("/api/daily-summary", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(dailySummaryRow),
-            });
-            if (!apiRes.ok) {
-              const { error: upErr } = await supabase.from("daily_summaries").upsert(dailySummaryRow, {
-                onConflict: "student_id,day",
-              });
-              summaryError = upErr;
-              if (!upErr) {
-                const { error: leaderboardError } = await syncAdminLeaderboard(supabase);
-                if (leaderboardError)
-                  console.error("Error syncing admin leaderboard:", leaderboardError);
-              }
-            }
-
-            if (summaryError) {
-              console.error("Error saving daily summary:", summaryError);
-              setSummarySaveError(
-                "Your debrief showed on screen, but the summary did not save. Fix one of: (1) Add SUPABASE_SERVICE_ROLE_KEY to .env.local and restart the dev server. (2) In Supabase: RLS policies allowing insert/update on daily_summaries for your app, plus a UNIQUE (student_id, day) constraint for upserts."
-              );
-            }
-
-            setAiDebrief(text);
+                : aiFeedbackText);
+            aiStrengthsArray = aiData.strengths.length ? aiData.strengths : [];
+            aiFocusArray = aiData.focus_areas.length ? aiData.focus_areas : [];
           } catch (err) {
-            setAiDebrief("Flight data archived successfully. Well done!");
+            console.error("Mission debrief failed:", err);
+            aiFeedbackText =
+              "We couldn't reach Mission Control for a personalized debrief right now. Your score is saved—excellent work finishing this mission.";
           }
+
+          /** Matches daily_summaries shape: Gemini debrief + session stats. */
+          const dailySummaryRow = {
+            student_id: studentId,
+            day: currentDay,
+            score: (correctAnswers / totalQuestions) * 100,
+            correct_count: correctAnswers,
+            total_questions: totalQuestions,
+            parent_summary: aiFeedbackText,
+            strengths: aiStrengthsArray,
+            focus_areas: aiFocusArray,
+            recommended_micro_lessons: null,
+            is_completed: true,
+          };
+
+          let summaryError = null;
+          const apiRes = await fetch("/api/daily-summary", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(dailySummaryRow),
+          });
+          if (!apiRes.ok) {
+            const { error: upErr } = await supabase.from("daily_summaries").upsert(dailySummaryRow, {
+              onConflict: "student_id,day",
+            });
+            summaryError = upErr;
+            if (!upErr) {
+              const { error: leaderboardError } = await syncAdminLeaderboard(supabase);
+              if (leaderboardError)
+                console.error("Error syncing admin leaderboard:", leaderboardError);
+            }
+          }
+
+          if (summaryError) {
+            console.error("Error saving daily summary:", summaryError);
+            setSummarySaveError(
+              "Mission completion did not save. Fix one of: (1) Add SUPABASE_SERVICE_ROLE_KEY to .env.local and restart the dev server. (2) In Supabase: RLS policies allowing insert/update on daily_summaries for your app, plus a UNIQUE (student_id, day) constraint for upserts."
+            );
+          }
+
+          setAiDebrief(aiFeedbackText);
         }
 
         // Peer average calculation
