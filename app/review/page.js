@@ -4,6 +4,8 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "../../utils/supabase/client";
 import { BRANDING } from "../../utils/branding";
+import FinalDayThankYou from "../components/FinalDayThankYou";
+import { isFinalMissionDay } from "../../utils/finalDayMessage";
 import {
   getMaxMissionDayCap,
   skipMaxMissionDayCap,
@@ -189,6 +191,12 @@ function ReviewContent() {
         </div>
         {reactionNotice ? <p style={noticeStyle}>{reactionNotice}</p> : null}
       </section>
+
+      {isFinalMissionDay(day) && (
+        <section style={{ ...cardStyle, padding: 0, border: "none", background: "transparent" }}>
+          <FinalDayThankYou />
+        </section>
+      )}
 
       <footer style={BRANDING.FOOTER_STYLE}>{BRANDING.FOOTER_LINE}</footer>
     </div>

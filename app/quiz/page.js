@@ -14,6 +14,8 @@ import {
   getFirstIncompleteInRange,
 } from "../../utils/programCalendar";
 import { motion, AnimatePresence } from "framer-motion";
+import FinalDayThankYou from "../components/FinalDayThankYou";
+import { isFinalMissionDay } from "../../utils/finalDayMessage";
 
 const BACKFILL_SUMMARY_PREFIX = "Mission summary backfilled from recorded responses.";
 
@@ -563,7 +565,7 @@ function QuizContent() {
               )}
 
               <h1 style={{ color: "#FF6A1A", fontSize: "24px", marginBottom: "15px" }}>
-                Day {day}: Mission Briefing
+                Day {day}: {isFinalMissionDay(day) ? "Final Mission Briefing" : "Mission Briefing"}
               </h1>
 
               <div style={briefingTextStyle}>
@@ -583,6 +585,20 @@ function QuizContent() {
                       {studentName}, are you ready? Let&apos;s see what you&apos;ve got!
                     </p>
                   </>
+                ) : isFinalMissionDay(day) ? (
+                  <>
+                    <p style={{ fontWeight: "bold", color: "#FF6A1A", marginBottom: "10px" }}>
+                      Hi {studentName} — this is your last mission!
+                    </p>
+                    <p>
+                      Day 40 is your <strong>Graduation Flight</strong>. You have practiced recall, learned from feedback,
+                      and kept going for forty days. Today we celebrate how far you have come.
+                    </p>
+                    <p style={{ marginTop: "10px" }}>
+                      Give it your best one more time. When you finish, the Ad Astra team has a special thank-you waiting for you.
+                    </p>
+                    <FinalDayThankYou compact />
+                  </>
                 ) : (
                   <p>{personalize(questions[0]?.mission_briefing)}</p>
                 )}
@@ -594,7 +610,9 @@ function QuizContent() {
             </motion.div>
           ) : quizFinished ? (
             <motion.div key="finished" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} style={cardStyle}>
-              <h2 style={{ fontSize: "28px", color: "#FF6A1A", textAlign: "center" }}>Mission Complete</h2>
+              <h2 style={{ fontSize: "28px", color: "#FF6A1A", textAlign: "center" }}>
+                {isFinalMissionDay(day) ? "40 Missions Complete!" : "Mission Complete"}
+              </h2>
               <div style={scoreBoxStyle}>
                 <div style={{ fontSize: "48px", fontWeight: "800", color: "#FF6A1A" }}>{userScore}%</div>
                 <p style={{ fontSize: "12px", color: "#94A3B8", letterSpacing: "1px", marginBottom: "20px" }}>
@@ -685,6 +703,7 @@ function QuizContent() {
                   )}
                 </div>
               </div>
+              {isFinalMissionDay(day) && <FinalDayThankYou />}
               <button type="button" onClick={goToDashboard} style={primaryBtnStyle}>Return to dashboard</button>
             </motion.div>
           ) : (
