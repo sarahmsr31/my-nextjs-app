@@ -588,16 +588,17 @@ function QuizContent() {
                 ) : isFinalMissionDay(day) ? (
                   <>
                     <p style={{ fontWeight: "bold", color: "#FF6A1A", marginBottom: "10px" }}>
-                      Hi {studentName} — this is your last mission!
+                      Hi {studentName} — welcome to your final mission!
                     </p>
                     <p>
                       Day 40 is your <strong>Graduation Flight</strong>. You have practiced recall, learned from feedback,
-                      and kept going for forty days. Today we celebrate how far you have come.
+                      and kept going for forty days. Today&apos;s questions are your last flight check before we celebrate
+                      how far you have come.
                     </p>
                     <p style={{ marginTop: "10px" }}>
-                      Give it your best one more time. When you finish, the Ad Astra team has a special thank-you waiting for you.
+                      Give it your best. When you finish, you&apos;ll see a thank-you note from the Ad Astra team and how
+                      to learn more about what comes next.
                     </p>
-                    <FinalDayThankYou compact />
                   </>
                 ) : (
                   <p>{personalize(questions[0]?.mission_briefing)}</p>
